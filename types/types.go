@@ -2,14 +2,6 @@ package types
 
 import "time"
 
-// backup
-// pagination offset limit
-// отклики проекта это все отклики или только апрувнутые?
-// виды контактов у Яши
-// в дизе нет добавления тегов в проекты
-// создание Research and Event WIP?
-// какой функционал у blocked users? это тоже самое что и reject contacts request?
-
 type Role int
 
 const (
