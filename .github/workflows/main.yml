@@ -20,7 +20,6 @@ jobs:
         run: docker build -t $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
 
       - name: echo envs
-        envs: IMAGE_NAME, REGISTRY, CONTAINER_NAME, GITHUB_SHA
         run: 
           echo $IMAGE_NAME
           echo $CONTAINER_NAME
