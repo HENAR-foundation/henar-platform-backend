@@ -7,7 +7,7 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetProjects(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("get projects test"))
+	w.Write([]byte("get projects test teeeeest"))
 }
 
 func CreateProject(w http.ResponseWriter, r *http.Request) {

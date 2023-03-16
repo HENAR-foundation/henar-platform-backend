@@ -19,4 +19,4 @@ WORKDIR /root/
 COPY --from=builder /henar-backend/app .
 EXPOSE 8080
 
-CMD [ "./henar-backend" ]
+CMD [ "./app" ]
