@@ -12,7 +12,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-lasets
-    if: github.event_name == 'push'
     steps: 
       - name: checkout main
         uses: actions/checkout@v2
@@ -30,3 +29,6 @@ jobs:
 
       - name: push image to registry
         run: docker push $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
+
+    # deploy:
+    #   runs-on: ubuntu-latest
