@@ -1,10 +1,8 @@
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 env: 
   REGISTRY: "registry.digitalocean.com/henar"
@@ -20,9 +18,15 @@ jobs:
         uses: actions/checkout@v2
 
       - name: build image
-        uses: docker build -t $(echo $REGISTRY)/$(echo IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
+        run: docker build -t $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
 
-      - name: install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DO_API_KEY }}
+      # - name: install doctl
+      #   uses: digitalocean/action-doctl@v2
+      #   with:
+      #     token: ${{ secrets.DO_API_KEY }}
+
+      # - name: login to do container registry
+      #   run: doctl registry login --expire-seconds 600
+
+      # - name: push image to registry
+      #   run: docker push $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
