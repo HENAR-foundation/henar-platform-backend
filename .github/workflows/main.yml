@@ -21,12 +21,12 @@ jobs:
 
       - name: echo envs
         envs: IMAGE_NAME, REGISTRY, CONTAINER_NAME, GITHUB_SHA
-        script: 
+        run: 
           echo $IMAGE_NAME
           echo $CONTAINER_NAME
           echo $REGISTRY
           echo $GITHUB_SHA
-          
+
       - name: install doctl
         uses: digitalocean/action-doctl@v2
         with:
