@@ -1,0 +1,28 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env: 
+  REGISTRY: "registry.digitalocean.com/henar"
+  IMAGE_NAME: "henar-backend"
+  CONTAINER_NAME: "henar-backend"
+
+jobs:
+  build:
+    runs-on: ubuntu-lasets
+    if: github.event_name == 'push'
+    steps: 
+      - name: checkout main
+        uses: actions/checkout@v2
+
+      - name: build image
+        uses: docker build -t $(echo $REGISTRY)/$(echo IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
+
+      - name: install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DO_API_KEY }}
