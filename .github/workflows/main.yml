@@ -43,10 +43,8 @@ jobs:
           envs: IMAGE_NAME, REGISTRY, CONTAINER_NAME, GITHUB_SHA
           script:
             docker login -u ${{ secrets.DO_API_KEY }} -p ${{ secrets.DO_API_KEY }} $(echo $REGISTRY)
-            
             # docker stop $(echo $CONTAINER_NAME)
             # docker rm $(echo $CONTAINER_NAME)
-
             docker run \
             --restart always \
             --publish 8080:8080 \
