@@ -44,8 +44,8 @@ jobs:
           script:
             docker login -u ${{ secrets.DO_API_KEY }} -p ${{ secrets.DO_API_KEY }} $(echo $REGISTRY)
 
-            docker stop $(echo $CONTAINER_NAME)
+            docker stop $(echo $CONTAINER_NAME) || true
 
-            docker rm $(echo $CONTAINER_NAME)
+            docker rm $(echo $CONTAINER_NAME) || true
 
             docker run -p --name $(echo $CONTAINER_NAME) 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)              
