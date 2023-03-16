@@ -44,8 +44,8 @@ jobs:
           script:
             docker login -u ${{ secrets.DO_API_KEY }} -p ${{ secrets.DO_API_KEY }} $(echo $REGISTRY)
             
-            docker stop $(echo $CONTAINER_NAME)
-            docker rm $(echo $CONTAINER_NAME)
+            # docker stop $(echo $CONTAINER_NAME)
+            # docker rm $(echo $CONTAINER_NAME)
 
             docker run \
             --restart always \
