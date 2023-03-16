@@ -16,15 +16,15 @@ jobs:
       - name: checkout main
         uses: actions/checkout@v2
 
-      - name: build image
-        run: docker build -t $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
-
       - name: echo envs
         run: 
           echo $IMAGE_NAME
           echo $CONTAINER_NAME
           echo $REGISTRY
           echo $GITHUB_SHA
+
+      - name: build image
+        run: docker build -t $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
 
       - name: install doctl
         uses: digitalocean/action-doctl@v2
