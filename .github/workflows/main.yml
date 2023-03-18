@@ -48,4 +48,5 @@ jobs:
 
             docker rm $(echo $CONTAINER_NAME) || true
 
-            docker run -d -e DB_URI="${{ secrets.DB_URI }}" --name $(echo $CONTAINER_NAME) -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)              
+            docker run -d --name $(echo $CONTAINER_NAME) -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)              
+            # docker run -d -e DB_URI="${{ secrets.DB_URI }}" --name $(echo $CONTAINER_NAME) -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)              
