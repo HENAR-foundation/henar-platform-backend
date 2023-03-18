@@ -4,20 +4,13 @@ import (
 	"henar-backend/auth"
 	"henar-backend/projects"
 	"henar-backend/utils"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Some error occured. Err: %s", err)
-	}
-
 	router := mux.NewRouter()
 	router.Use(utils.RouterLoggerMiddleware)
 
