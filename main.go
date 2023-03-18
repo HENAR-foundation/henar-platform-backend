@@ -19,15 +19,25 @@ func main() {
 	}
 
 	router := mux.NewRouter()
-
 	router.Use(utils.RouterLoggerMiddleware)
-	router.Use(auth.SessionMiddleware)
 
-	router.HandleFunc("/v1/projects", projects.GetProjects).Methods("GET")
-	router.HandleFunc("/v1/projects/{projectId}", projects.GetProject).Methods("GET")
-	router.HandleFunc("/v1/projects", projects.CreateProject).Methods("POST")
-	router.HandleFunc("/v1/projects/{projectId}", projects.UpdateProject).Methods("PATCH")
-	router.HandleFunc("/v1/projects/{projectId}", projects.DeleteProject).Methods("DELETE")
+	apiRouter := router.PathPrefix("/api").Subrouter()
+
+	noAuth := apiRouter.PathPrefix("").Subrouter()
+	{
+		noAuth.HandleFunc("/login", auth.LoginHandler).Methods("POST")
+		noAuth.HandleFunc("/logout", auth.LogoutHandler).Methods("GET")
+		noAuth.HandleFunc("/projects", projects.GetProjects).Methods("GET")
+		noAuth.HandleFunc("/projects/{projectId}", projects.GetProject).Methods("GET")
+	}
+
+	sessionAuth := apiRouter.PathPrefix("").Subrouter()
+	sessionAuth.Use(auth.SessionMiddleware)
+	{
+		sessionAuth.HandleFunc("/projects", projects.CreateProject).Methods("POST")
+		sessionAuth.HandleFunc("/projects/{projectId}", projects.UpdateProject).Methods("PATCH")
+		sessionAuth.HandleFunc("/projects/{projectId}", projects.DeleteProject).Methods("DELETE")
+	}
 
 	corsHandler := cors.AllowAll().Handler(router)
 	http.ListenAndServe(":8080", corsHandler)
