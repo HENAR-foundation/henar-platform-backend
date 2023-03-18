@@ -39,6 +39,12 @@ func main() {
 		sessionAuth.HandleFunc("/projects/{projectId}", projects.DeleteProject).Methods("DELETE")
 	}
 
+	adminAuth := sessionAuth.PathPrefix("").Subrouter()
+	adminAuth.Use(auth.AdminMiddleware)
+	{
+
+	}
+
 	corsHandler := cors.AllowAll().Handler(router)
 	http.ListenAndServe(":8080", corsHandler)
 }
