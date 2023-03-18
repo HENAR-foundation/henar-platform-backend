@@ -10,12 +10,16 @@ var store = sessions.NewCookieStore([]byte("vsljvnfsljbnfsljbnfblkjnf")) // remo
 
 func SessionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, _ := store.Get(r, "session.id")
-
-		if session.Values["authentificated"] != nil && session.Values["authentificated"] != false {
+		if r.URL.Path != "/open-urls" {
 			next.ServeHTTP(w, r)
 		} else {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			session, _ := store.Get(r, "session.id")
+
+			if session.Values["authentificated"] != nil && session.Values["authentificated"] != false {
+				next.ServeHTTP(w, r)
+			} else {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+			}
 		}
 
 	})
