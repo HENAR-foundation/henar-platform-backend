@@ -1,6 +1,7 @@
 package main
 
 import (
+	"henar-backend/auth"
 	"henar-backend/projects"
 	"henar-backend/utils"
 	"log"
@@ -20,6 +21,7 @@ func main() {
 	router := mux.NewRouter()
 
 	router.Use(utils.RouterLoggerMiddleware)
+	router.Use(auth.SessionMiddleware)
 
 	router.HandleFunc("/v1/projects", projects.GetProjects).Methods("GET")
 	router.HandleFunc("/v1/projects/{projectId}", projects.GetProject).Methods("GET")
