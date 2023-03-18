@@ -27,8 +27,8 @@ func main() {
 	{
 		noAuth.HandleFunc("/login", auth.LoginHandler).Methods("POST")
 		noAuth.HandleFunc("/logout", auth.LogoutHandler).Methods("GET")
-		noAuth.HandleFunc("/projects", projects.GetProjects).Methods("GET")
 		noAuth.HandleFunc("/projects/{projectId}", projects.GetProject).Methods("GET")
+		noAuth.HandleFunc("/projects", projects.GetProjects).Methods("GET")
 	}
 
 	sessionAuth := apiRouter.PathPrefix("").Subrouter()
