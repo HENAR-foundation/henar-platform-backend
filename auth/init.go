@@ -2,7 +2,6 @@ package auth
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gorilla/sessions"
 )
@@ -21,27 +20,3 @@ func SessionMiddleware(next http.Handler) http.Handler {
 
 	})
 }
-
-func WithUserCreds(w http.ResponseWriter, r *http.Request) {
-	session, _ := store.Get(r, "session.id")
-
-	if session.Values["authentificated"] != nil && session.Values["authentificated"] != false {
-		w.Write([]byte(time.Now().String()))
-	} else {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-	}
-}
-
-// func SessionMiddleware(h http.HandlerFunc) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		session, _ := store.Get(r, "session.id")
-
-// 		if session.Values["authentificated"] != nil && session.Values["authentificated"] != false {
-// 			w.Write([]byte(time.Now().String()))
-// 		} else {
-// 			http.Error(w, "Forbidden", http.StatusForbidden)
-// 		}
-
-// 		h(w, r)
-// 	}
-// }
