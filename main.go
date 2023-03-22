@@ -11,8 +11,11 @@ import (
 )
 
 func main() {
+	// auth.InitSessions()
 	router := mux.NewRouter()
 	router.Use(utils.RouterLoggerMiddleware)
+
+	corsHandler := cors.Default().Handler(router)
 
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
@@ -20,6 +23,7 @@ func main() {
 	{
 		noAuth.HandleFunc("/login", auth.LoginHandler).Methods("POST")
 		noAuth.HandleFunc("/logout", auth.LogoutHandler).Methods("GET")
+		noAuth.HandleFunc("/check", auth.CheckAuthHandler).Methods("GET")
 		noAuth.HandleFunc("/projects/{projectId}", projects.GetProject).Methods("GET")
 		noAuth.HandleFunc("/projects", projects.GetProjects).Methods("GET")
 	}
@@ -38,6 +42,5 @@ func main() {
 
 	}
 
-	corsHandler := cors.AllowAll().Handler(router)
 	http.ListenAndServe(":8080", corsHandler)
 }
