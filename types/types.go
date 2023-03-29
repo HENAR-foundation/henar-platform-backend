@@ -89,21 +89,21 @@ const (
 )
 
 type Project struct {
-	ID                   primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Slug                 string             `json:"slug" bson:"slug"`
-	Covers               []string           `json:"covers,omitempty" bson:"covers,omitempty"`
-	Author               int64              `json:"author" validate:"required" bson:"author"`
-	Title                string             `json:"title" validate:"required" bson:"title"`
-	Description          string             `json:"description" validate:"required" bson:"description"`
-	Objective            string             `json:"objective" validate:"required" bson:"objective"`
-	WhoIsNeeded          string             `json:"who_is_needed" validate:"required" bson:"who_is_needed"`
-	Tags                 []int64            `json:"tags" validate:"required" bson:"tags"`
-	Applicants           []int64            `json:"applicants,omitempty" bson:"applicants,omitempty"`
-	Views                int64              `json:"views" bson:"views"`
-	ModerationStatus     ModerationStatus   `json:"moderation_status" bson:"moderation_status"`
-	ReasonOfReject       string             `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
-	SuccessfulApplicants []int64            `json:"successful_applicants,omitempty" bson:"successful_applicants,omitempty"`
-	RejectedApplicants   []int64            `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
+	ID                   primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
+	Slug                 string               `json:"slug" bson:"slug"`
+	Covers               []string             `json:"covers,omitempty" bson:"covers,omitempty"`
+	Author               primitive.ObjectID   `json:"author" validate:"required" bson:"author"`
+	Title                string               `json:"title" validate:"required" bson:"title"`
+	Description          string               `json:"description" validate:"required" bson:"description"`
+	Objective            string               `json:"objective" validate:"required" bson:"objective"`
+	WhoIsNeeded          string               `json:"who_is_needed" validate:"required" bson:"who_is_needed"`
+	Tags                 []primitive.ObjectID `json:"tags" validate:"required" bson:"tags"`
+	Applicants           []primitive.ObjectID `json:"applicants,omitempty" bson:"applicants,omitempty"`
+	Views                int64                `json:"views" bson:"views"`
+	ModerationStatus     ModerationStatus     `json:"moderation_status" bson:"moderation_status"`
+	ReasonOfReject       string               `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
+	SuccessfulApplicants []primitive.ObjectID `json:"successful_applicants,omitempty" bson:"successful_applicants,omitempty"`
+	RejectedApplicants   []primitive.ObjectID `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
 }
 
 type Research struct {
@@ -131,7 +131,13 @@ type Location struct {
 	ExtraInfo string `json:"extra_info"`
 }
 
-type Tags struct {
-	ID    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Title string             `json:"title" bson:"title" validate:"required"`
+type Tag struct {
+	ID          primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Title       string             `json:"title" bson:"title" validate:"required"`
+	Translation Translation
+}
+
+type Translation struct {
+	Ru string
+	Hy string
 }
