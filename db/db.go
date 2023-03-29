@@ -24,7 +24,7 @@ func GetClientOptions() *options.ClientOptions {
 func GetCollection(collection string) (*mongo.Collection, error) {
 	client := GetMongoClient()
 
-	return client.Database("test").Collection(collection), nil
+	return client.Database("henar").Collection(collection), nil
 }
 
 func InitDb() {
