@@ -2,6 +2,8 @@ package types
 
 import (
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Role int
@@ -10,6 +12,14 @@ const (
 	Admin Role = iota
 	Specialist
 )
+
+type Contacts struct {
+	Emain    string `json:"emain"`
+	Phone    string `json:"phone"`
+	Facebook string `json:"facebook"`
+	Insta    string `json:"insta"`
+	Linkedin string `json:"linkedin"`
+}
 
 type User struct {
 	Id                        int64    `json:"id"`
@@ -73,28 +83,27 @@ type Event struct {
 type ModerationStatus int
 
 const (
-	Accepted ModerationStatus = iota
+	ForRevision ModerationStatus = iota
+	Accepted
 	Rejected
-	ForRevision
 )
 
 type Project struct {
-	Id                   int64            `json:"id"`
-	CreatedAt            string           `json:"created_at"`
-	Slug                 string           `json:"slug"`
-	Covers               []string         `json:"covers"`
-	Author               int64            `json:"author"`
-	Title                string           `json:"title"`
-	Description          string           `json:"description"`
-	Objective            string           `json:"objective"`
-	WhoIsNeeded          string           `json:"who_is_needed"`
-	Tags                 []int64          `json:"tags"`
-	Applicants           []int64          `json:"applicants"`
-	Views                int64            `json:"views"`
-	ModerationStatus     ModerationStatus `json:"moderation_status"`
-	ReasonOfReject       string           `json:"reason_of_reject"`
-	SuccessfulApplicants []int64          `json:"successful_applicants"`
-	RejectedApplicants   []int64          `json:"rejected_applicants"`
+	ID                   primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Slug                 string             `json:"slug" bson:"slug"`
+	Covers               []string           `json:"covers,omitempty" bson:"covers,omitempty"`
+	Author               int64              `json:"author" validate:"required" bson:"author"`
+	Title                string             `json:"title" validate:"required" bson:"title"`
+	Description          string             `json:"description" validate:"required" bson:"description"`
+	Objective            string             `json:"objective" validate:"required" bson:"objective"`
+	WhoIsNeeded          string             `json:"who_is_needed" validate:"required" bson:"who_is_needed"`
+	Tags                 []int64            `json:"tags" validate:"required" bson:"tags"`
+	Applicants           []int64            `json:"applicants,omitempty" bson:"applicants,omitempty"`
+	Views                int64              `json:"views" bson:"views"`
+	ModerationStatus     ModerationStatus   `json:"moderation_status" bson:"moderation_status"`
+	ReasonOfReject       string             `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
+	SuccessfulApplicants []int64            `json:"successful_applicants,omitempty" bson:"successful_applicants,omitempty"`
+	RejectedApplicants   []int64            `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
 }
 
 type Research struct {
@@ -123,6 +132,6 @@ type Location struct {
 }
 
 type Tags struct {
-	Id    int64  `json:"id"`
-	Title string `json:"title"`
+	ID    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Title string             `json:"title" bson:"title" validate:"required"`
 }
