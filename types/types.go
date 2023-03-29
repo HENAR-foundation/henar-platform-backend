@@ -11,6 +11,17 @@ const (
 	Specialist
 )
 
+type UserCredentials struct {
+	Id       int64  `json:"id"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type UserCredentialsWithoutId struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 type User struct {
 	Id                        int64    `json:"id"`
 	CreatedAt                 string   `json:"created_at"`

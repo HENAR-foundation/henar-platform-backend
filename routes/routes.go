@@ -1,23 +1,38 @@
-package main
+package routes
 
 import (
-	"henar-backend/routes"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/session"
 )
 
-func main() {
-	app := fiber.New()
+var (
+	store    *session.Store
+	AUTH_KEY string = "authentificated"
+	USER_ID  string = "user_id"
+)
 
-	app.Use(cors.New(cors.Config{
-		AllowHeaders:     "Origin,Content-Type,Accept,Content-Length,Accept-Language,Accept-Encoding,Connection,Access-Control-Allow-Origin,Access-Control-Allow-Credectials",
-		AllowOrigins:     string("http://localhost:3000"),
-		AllowCredentials: true,
-		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
-	}))
+func Setup(app *fiber.App) {
+	store = session.New(session.Config{
+		CookieHTTPOnly: true,
+		Expiration:     time.Hour * 3000,
+	})
+	// router.Use(BaseMiddleware, cors.New(cors.Config{
+	// 	AllowCredentials: true,
+	// 	AllowOrigins:     "*",
+	// 	AllowHeaders:     "Access-Control-Allow-Origin, Content-Type, Authorization, Origin, Accept",
+	// }))
 
-	routes.Setup(app)
+	// noAuth := router.Group("")
+
+	app.Post("/auth/signup", SignUp)
+	app.Post("/auth/signin", SignIn)
+	app.Get("/auth/signout", SignOut)
+	app.Get("/auth/check", Check)
+
+	app.Listen(":8080")
+	// noAuth.Post("/auth/check", auth.Check)
 	// router := mux.NewRouter()
 	// router.Use(utils.RouterLoggerMiddleware)
 
