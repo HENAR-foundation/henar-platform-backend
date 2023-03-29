@@ -3,6 +3,7 @@ package main
 import (
 	"henar-backend/auth"
 	"henar-backend/projects"
+	"henar-backend/users"
 	"henar-backend/utils"
 	"net/http"
 
@@ -21,9 +22,10 @@ func main() {
 
 	noAuth := apiRouter.PathPrefix("").Subrouter()
 	{
-		noAuth.HandleFunc("/login", auth.LoginHandler).Methods("POST")
-		noAuth.HandleFunc("/logout", auth.LogoutHandler).Methods("GET")
-		noAuth.HandleFunc("/check", auth.CheckAuthHandler).Methods("GET")
+		noAuth.HandleFunc(("/auth/signup"), users.CreateUser).Methods("POST")
+		noAuth.HandleFunc("/auth/login", auth.LoginHandler).Methods("POST")
+		noAuth.HandleFunc("/auth/logout", auth.LogoutHandler).Methods("GET")
+		// noAuth.HandleFunc("/auth/check", auth.CheckAuthHandler).Methods("GET")
 		noAuth.HandleFunc("/projects/{projectId}", projects.GetProject).Methods("GET")
 		noAuth.HandleFunc("/projects", projects.GetProjects).Methods("GET")
 	}
@@ -31,6 +33,7 @@ func main() {
 	sessionAuth := apiRouter.PathPrefix("").Subrouter()
 	sessionAuth.Use(auth.SessionMiddleware)
 	{
+		sessionAuth.HandleFunc("/users/{userId}", users.GetUser).Methods("GET")
 		sessionAuth.HandleFunc("/projects", projects.CreateProject).Methods("POST")
 		sessionAuth.HandleFunc("/projects/{projectId}", projects.UpdateProject).Methods("PATCH")
 		sessionAuth.HandleFunc("/projects/{projectId}", projects.DeleteProject).Methods("DELETE")

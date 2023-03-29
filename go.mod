@@ -8,6 +8,8 @@ require (
 	go.mongodb.org/mongo-driver v1.11.2
 )
 
+require golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
+
 require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang/snappy v0.0.1 // indirect
