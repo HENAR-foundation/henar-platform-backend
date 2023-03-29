@@ -1,6 +1,7 @@
 package main
 
 import (
+	"henar-backend/db"
 	"henar-backend/projects"
 	"henar-backend/utils"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 )
 
 func main() {
+	db.InitDb()
 	router := mux.NewRouter()
 
 	router.Use(utils.RouterLoggerMiddleware)
