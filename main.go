@@ -3,6 +3,7 @@ package main
 import (
 	"henar-backend/db"
 	"henar-backend/projects"
+	"henar-backend/tags"
 	"henar-backend/utils"
 	"net/http"
 
@@ -12,10 +13,13 @@ import (
 
 func main() {
 	db.InitDb()
+
 	router := mux.NewRouter()
 
 	router.Use(utils.RouterLoggerMiddleware)
 
+	router.HandleFunc("/v1/tags", tags.GetTags).Methods("GET")
+	router.HandleFunc("/v1/tags/{tagId}", tags.GetTag).Methods("GET")
 	router.HandleFunc("/v1/projects", projects.GetProjects).Methods("GET")
 	router.HandleFunc("/v1/projects/{projectId}", projects.GetProject).Methods("GET")
 	router.HandleFunc("/v1/projects", projects.CreateProject).Methods("POST")
