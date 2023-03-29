@@ -20,6 +20,10 @@ func main() {
 
 	router.HandleFunc("/v1/tags", tags.GetTags).Methods("GET")
 	router.HandleFunc("/v1/tags/{tagId}", tags.GetTag).Methods("GET")
+	router.HandleFunc("/v1/tags", tags.CreateTag).Methods("POST")
+	router.HandleFunc("/v1/tags/{tagId}", tags.UpdateTag).Methods("PATCH")
+	router.HandleFunc("/v1/tags/{tagId}", tags.DeleteTag).Methods("DELETE")
+
 	router.HandleFunc("/v1/projects", projects.GetProjects).Methods("GET")
 	router.HandleFunc("/v1/projects/{projectId}", projects.GetProject).Methods("GET")
 	router.HandleFunc("/v1/projects", projects.CreateProject).Methods("POST")

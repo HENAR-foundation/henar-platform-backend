@@ -132,12 +132,12 @@ type Location struct {
 }
 
 type Tag struct {
-	ID          primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Title       string             `json:"title" bson:"title" validate:"required"`
-	Translation Translation
+	ID           primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Translations Translations       `json:"translations,omitempty" bson:"translations,omitempty"`
 }
 
-type Translation struct {
-	Ru string
-	Hy string
+type Translations struct {
+	En string `bson:"en" json:"en"`
+	Ru string `bson:"ru" json:"ru"`
+	Hy string `bson:"hy" json:"hy"`
 }
