@@ -7,14 +7,14 @@ import (
 	"henar-backend/types"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gopkg.in/go-playground/validator.v9"
 )
 
-func GetTags(w http.ResponseWriter, r *http.Request) {
+func GetTags(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("tags")
 
 	filter := bson.M{}
@@ -22,8 +22,7 @@ func GetTags(w http.ResponseWriter, r *http.Request) {
 	// Query the database and get the cursor
 	cursor, err := collection.Find(context.TODO(), filter)
 	if err != nil {
-		http.Error(w, "Error finding tags", http.StatusInternalServerError)
-		return
+		return c.Status(fiber.StatusInternalServerError).SendString("Error finding tags")
 	}
 
 	// Get the results from the cursor
@@ -35,30 +34,23 @@ func GetTags(w http.ResponseWriter, r *http.Request) {
 	// Marshal the tag struct to JSON format
 	jsonBytes, err := json.Marshal(results)
 	if err != nil {
-		http.Error(w, "Error encoding JSON: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
 	// Set the response headers and write the response body
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(jsonBytes)
-	if err != nil {
-		http.Error(w, "Error writing response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+	c.Status(fiber.StatusOK)
+	return c.Send(jsonBytes)
 }
 
-func GetTag(w http.ResponseWriter, r *http.Request) {
+func GetTag(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("tags")
 
 	// Get the tag ID from the URL path parameter
-	vars := mux.Vars(r)
-	id := vars["tagId"]
+	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid ID")
 	}
 
 	filter := bson.D{{Key: "_id", Value: objId}}
@@ -72,54 +64,44 @@ func GetTag(w http.ResponseWriter, r *http.Request) {
 	).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			http.Error(w, "Tag not found", http.StatusNotFound)
-			return
+			return c.Status(fiber.StatusNotFound).SendString("Tag not found")
 		}
-		http.Error(w, "Error getting tag: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(fiber.StatusInternalServerError).SendString("Error getting tag: " + err.Error())
 	}
 
 	// Marshal the tag struct to JSON format
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
-		http.Error(w, "Error encoding JSON: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
 	// Set the response headers and write the response body
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(jsonBytes)
-	if err != nil {
-		http.Error(w, "Error writing response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+	c.Status(fiber.StatusOK)
+	return c.Send(jsonBytes)
 }
 
-func CreateTag(w http.ResponseWriter, r *http.Request) {
+func CreateTag(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("tags")
 
 	// Parse request body into tag struct
 	var tag types.Tag
-	err := json.NewDecoder(r.Body).Decode(&tag)
+	err := c.BodyParser(&tag)
 	if err != nil {
-		http.Error(w, "Error parsing request body: "+err.Error(), http.StatusBadRequest)
-		return
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing request body: " + err.Error()})
 	}
 
 	// Validate the required fields
 	v := validator.New()
 	err = v.Struct(tag)
 	if err != nil {
-		http.Error(w, "Error retrieving created tag: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Error retrieving created tag: " + err.Error()})
 	}
 
 	// Insert tag document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), tag)
 	if err != nil {
-		http.Error(w, "Error creating tag: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating tag: " + err.Error()})
 	}
 
 	// Get the ID of the inserted tag document
@@ -130,53 +112,41 @@ func CreateTag(w http.ResponseWriter, r *http.Request) {
 	var createdTag types.Tag
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdTag)
 	if err != nil {
-		http.Error(w, "Error retrieving updated tag: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Error retrieving updated tag: " + err.Error()})
 	}
 
 	// Marshal the tag struct to JSON format
 	jsonBytes, err := json.Marshal(createdTag)
 	if err != nil {
-		http.Error(w, "Error encoding JSON: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Error encoding JSON: " + err.Error()})
 	}
 
 	// Set the response headers and write the response body
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	_, err = w.Write(jsonBytes)
-	if err != nil {
-		http.Error(w, "Error writing response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	return c.Status(http.StatusCreated).JSON(fiber.Map{"data": jsonBytes})
 }
 
-func UpdateTag(w http.ResponseWriter, r *http.Request) {
+func UpdateTag(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("tags")
 
 	// Get the tag ID from the URL path parameter
-	params := mux.Vars(r)
-	id := params["tagId"]
+	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
 	// Parse the request body into a tag struct
 	var tag types.Tag
-	err = json.NewDecoder(r.Body).Decode(&tag)
+	err = c.BodyParser(&tag)
 	if err != nil {
-		http.Error(w, "Error parsing request body: "+err.Error(), http.StatusBadRequest)
-		return
+		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
 	// Validate the required fields
 	v := validator.New()
 	err = v.Struct(tag)
 	if err != nil {
-		http.Error(w, "Validation error: "+err.Error(), http.StatusBadRequest)
-		return
+		return c.Status(http.StatusBadRequest).SendString("Validation error: " + err.Error())
 	}
 
 	// Update the tag document in MongoDB
@@ -184,8 +154,7 @@ func UpdateTag(w http.ResponseWriter, r *http.Request) {
 	update := bson.M{"$set": tag}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
-		http.Error(w, "Error updating tag: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error updating tag: " + err.Error())
 	}
 
 	// Retrieve the updated tag from MongoDB
@@ -193,36 +162,27 @@ func UpdateTag(w http.ResponseWriter, r *http.Request) {
 	var updatedTag types.Tag
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedTag)
 	if err != nil {
-		http.Error(w, "Error retrieving updated tag: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated tag: " + err.Error())
 	}
 
 	// Marshal the updated tag struct to JSON format
 	jsonBytes, err := json.Marshal(updatedTag)
 	if err != nil {
-		http.Error(w, "Error creating response: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error creating response: " + err.Error())
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(jsonBytes)
-	if err != nil {
-		http.Error(w, "Error writing response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	c.Set("Content-Type", "application/json")
+	return c.Send(jsonBytes)
 }
 
-func DeleteTag(w http.ResponseWriter, r *http.Request) {
+func DeleteTag(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("tags")
 
 	// Get the tag ID from the URL path parameter
-	vars := mux.Vars(r)
-	id := vars["tagId"]
+	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
 	filter := bson.D{{Key: "_id", Value: objId}}
@@ -230,20 +190,13 @@ func DeleteTag(w http.ResponseWriter, r *http.Request) {
 	// Delete tag document from MongoDB
 	result, err := collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
-		http.Error(w, "Error deleting tag: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error deleting tag: " + err.Error())
 	}
 
 	// Check if any documents were deleted
 	if result.DeletedCount == 0 {
-		http.Error(w, "tag not found", http.StatusNotFound)
-		return
+		return c.Status(http.StatusNotFound).SendString("Tag not found")
 	}
 
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte("Tag deleted successfully"))
-	if err != nil {
-		http.Error(w, "Error writing response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	return c.SendString("Tag deleted successfully")
 }

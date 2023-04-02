@@ -107,12 +107,11 @@ type Project struct {
 }
 
 type Research struct {
-	Id          int64   `json:"id"`
-	CreatedAt   string  `json:"created_at"`
-	Title       string  `json:"title"`
-	Description string  `json:"description"`
-	Tags        []int64 `json:"tags"`
-	Link        string  `json:"link"`
+	ID          primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
+	Tags        []primitive.ObjectID `json:"tags" validate:"required" bson:"tags"`
+	Link        string               `json:"link"`
 }
 
 type Statistic struct {
