@@ -108,10 +108,10 @@ type Project struct {
 
 type Research struct {
 	ID          primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
-	Title       string               `json:"title"`
-	Description string               `json:"description"`
-	Tags        []primitive.ObjectID `json:"tags" validate:"required" bson:"tags"`
-	Link        string               `json:"link"`
+	Title       string               `json:"title" validate:"required"`
+	Description string               `json:"description" validate:"required"`
+	Tags        []primitive.ObjectID `json:"tags" validate:"required"`
+	Link        string               `json:"link" validate:"required"`
 }
 
 type Statistic struct {

@@ -14,6 +14,14 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
+// @Summary Get all researches
+// @Description Retrieves all researches
+// @Tags researches
+// @Accept json
+// @Produce json
+// @Success 200 {array} types.Research
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/researches [get]
 func GetResearches(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("researches")
 
@@ -43,6 +51,17 @@ func GetResearches(c *fiber.Ctx) error {
 	return c.Send(jsonBytes)
 }
 
+// @Summary Get research by ID
+// @Description Retrieves a research by its ID
+// @Tags researches
+// @Accept json
+// @Produce json
+// @Param id path string true "Research ID"
+// @Success 200 {object} types.Research
+// @Failure 400 {string} string "Invalid ID"
+// @Failure 404 {string} string "Research not found"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/researches/{id} [get]
 func GetResearch(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("researches")
 
@@ -81,6 +100,16 @@ func GetResearch(c *fiber.Ctx) error {
 	return c.Send(jsonBytes)
 }
 
+// @Summary Create research
+// @Description Creates a new research
+// @Tags researches
+// @Accept json
+// @Produce json
+// @Param research body types.Research true "Research Object"
+// @Success 201 {object} types.Research
+// @Failure 400 {string} string "Bad Request"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/researches [post]
 func CreateResearch(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("researches")
 
@@ -119,6 +148,17 @@ func CreateResearch(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(createdResearch)
 }
 
+// @Summary Update research by ID
+// @Description Updates a research by its ID
+// @Tags researches
+// @Accept json
+// @Produce json
+// @Param id path string true "Research ID"
+// @Param research body types.Research true "Research Object"
+// @Success 200 {object} types.Research
+// @Failure 400 {string} string "Invalid ID or Bad Request"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/researches/{id} [put]
 func UpdateResearch(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("researches")
 
@@ -163,6 +203,17 @@ func UpdateResearch(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(updatedResearch)
 }
 
+// @Summary Delete research by ID
+// @Description Deletes a research document by its ID
+// @Tags researches
+// @Accept json
+// @Produce json
+// @Param id path string true "Research ID"
+// @Success 200 {string} string "Research deleted successfully"
+// @Failure 400 {string} string "Invalid ID"
+// @Failure 404 {string} string "Research not found"
+// @Failure 500 {string} string "Error deleting research: <error message>"
+// @Router /v1/researches/{id} [delete]
 func DeleteResearch(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("researches")
 

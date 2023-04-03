@@ -9,14 +9,23 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/swagger"
+
+	_ "henar-backend/docs"
 )
 
+// @title Henar
+// @version 1.0
+// @host localhost:8080
+// @BasePath /
 func main() {
 	db.InitDb()
 
 	app := fiber.New()
 
 	app.Use(logger.New())
+
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	// Tags routes
 	tagsGroup := app.Group("/v1/tags")

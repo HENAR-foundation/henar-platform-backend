@@ -15,6 +15,18 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
+// GetProject retrieves a project by its ID and increments its view count.
+// @Summary Get a project by ID
+// @Description Retrieves a project by its ID and increments its view count.
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} types.Project
+// @Failure 400 {string} string "Invalid ID"
+// @Failure 404 {string} string "Project not found"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/projects/{id} [get]
 func GetProject(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
@@ -61,6 +73,15 @@ func GetProject(c *fiber.Ctx) error {
 	return nil
 }
 
+// GetProjects retrieves a list of all projects in the database.
+// @Summary Get all projects
+// @Description Retrieves a list of all projects in the database.
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Success 200 {array} types.Project
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/projects [get]
 func GetProjects(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
@@ -94,6 +115,17 @@ func GetProjects(c *fiber.Ctx) error {
 	return nil
 }
 
+// CreateProject creates a new project in the database.
+// @Summary Create a project
+// @Description Creates a new project in the database.
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param project body types.Project true "Project"
+// @Success 201 {object} types.Project
+// @Failure 400 {string} string "Error parsing request body"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/projects [post]
 func CreateProject(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
@@ -132,6 +164,18 @@ func CreateProject(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(createdProject)
 }
 
+// UpdateProject updates an existing project in the database.
+// @Summary Update a project
+// @Description Updates an existing project in the database.
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Param project body types.Project true "Project"
+// @Success 204 "No content"
+// @Failure 400 {string} string "Invalid ID or error parsing request body"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/projects/{id} [put]
 func UpdateProject(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
@@ -176,6 +220,17 @@ func UpdateProject(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(updatedProject)
 }
 
+// @Summary Delete a project
+// @Description Deletes a project from the database based on the provided ID
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {string} string "Project deleted successfully"
+// @Failure 400 {string} string "Invalid ID"
+// @Failure 404 {string} string "Project not found"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/projects/{id} [delete]
 func DeleteProject(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 

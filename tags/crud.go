@@ -14,6 +14,14 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
+// @Summary Get all tags
+// @Description Retrieves a list of all tags in the database
+// @Tags tags
+// @Accept json
+// @Produce json
+// @Success 200 {array} types.Tag
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/tags [get]
 func GetTags(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("tags")
 
@@ -43,6 +51,17 @@ func GetTags(c *fiber.Ctx) error {
 	return c.Send(jsonBytes)
 }
 
+// @Summary Get tag by ID
+// @Description Retrieves a tag by its ID
+// @Tags tags
+// @Accept json
+// @Produce json
+// @Param id path string true "Tag ID"
+// @Success 200 {object} types.Tag
+// @Failure 400 {string} string "Invalid ID"
+// @Failure 404 {string} string "Tag not found"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/tags/{id} [get]
 func GetTag(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("tags")
 
@@ -81,6 +100,16 @@ func GetTag(c *fiber.Ctx) error {
 	return c.Send(jsonBytes)
 }
 
+// @Summary Create a new tag
+// @Description Creates a new tag in the database
+// @Tags tags
+// @Accept json
+// @Produce json
+// @Param tag body types.Tag true "Tag object to create"
+// @Success 201 {object} types.Tag "Created tag object"
+// @Failure 400 {string} string "Error parsing request body or validation error"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/tags [post]
 func CreateTag(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("tags")
 
@@ -125,6 +154,17 @@ func CreateTag(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(fiber.Map{"data": jsonBytes})
 }
 
+// @Summary Update tag by ID
+// @Description Updates a tag with the given ID in the database
+// @Tags tags
+// @Accept json
+// @Produce json
+// @Param id path string true "Tag ID"
+// @Param tag body types.Tag true "Tag object to update"
+// @Success 200 {object} types.Tag "Updated tag object"
+// @Failure 400 {string} string "Invalid ID or error parsing request body or validation error"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/tags/{id} [put]
 func UpdateTag(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("tags")
 
@@ -175,6 +215,15 @@ func UpdateTag(c *fiber.Ctx) error {
 	return c.Send(jsonBytes)
 }
 
+// @Summary Delete tag by ID
+// @Description Deletes a tag with the given ID from the database
+// @Tags tags
+// @Param id path string true "Tag ID"
+// @Success 200 {string} string "Tag deleted successfully"
+// @Failure 400 {string} string "Invalid ID"
+// @Failure 404 {string} string "Tag not found"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/tags/{id} [delete]
 func DeleteTag(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("tags")
 
