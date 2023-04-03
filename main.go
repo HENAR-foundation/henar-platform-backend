@@ -3,33 +3,55 @@ package main
 import (
 	"henar-backend/db"
 	"henar-backend/projects"
+	"henar-backend/researches"
 	"henar-backend/tags"
-	"henar-backend/utils"
-	"net/http"
 
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/swagger"
+
+	_ "henar-backend/docs"
 )
 
+// @title Henar
+// @version 1.0
+// @host localhost:8080
+// @BasePath /
 func main() {
 	db.InitDb()
 
-	router := mux.NewRouter()
+	app := fiber.New()
 
-	router.Use(utils.RouterLoggerMiddleware)
+	app.Use(logger.New())
 
-	router.HandleFunc("/v1/tags", tags.GetTags).Methods("GET")
-	router.HandleFunc("/v1/tags/{tagId}", tags.GetTag).Methods("GET")
-	router.HandleFunc("/v1/tags", tags.CreateTag).Methods("POST")
-	router.HandleFunc("/v1/tags/{tagId}", tags.UpdateTag).Methods("PATCH")
-	router.HandleFunc("/v1/tags/{tagId}", tags.DeleteTag).Methods("DELETE")
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
-	router.HandleFunc("/v1/projects", projects.GetProjects).Methods("GET")
-	router.HandleFunc("/v1/projects/{projectId}", projects.GetProject).Methods("GET")
-	router.HandleFunc("/v1/projects", projects.CreateProject).Methods("POST")
-	router.HandleFunc("/v1/projects/{projectId}", projects.UpdateProject).Methods("PATCH")
-	router.HandleFunc("/v1/projects/{projectId}", projects.DeleteProject).Methods("DELETE")
+	// Tags routes
+	tagsGroup := app.Group("/v1/tags")
+	tagsGroup.Get("", tags.GetTags)
+	tagsGroup.Get("/:id", tags.GetTag)
+	tagsGroup.Post("", tags.CreateTag)
+	tagsGroup.Patch("/:id", tags.UpdateTag)
+	tagsGroup.Delete("/:id", tags.DeleteTag)
 
-	corsHandler := cors.AllowAll().Handler(router)
-	http.ListenAndServe(":8080", corsHandler)
+	// Projects routes
+	projectsGroup := app.Group("/v1/projects")
+	projectsGroup.Get("", projects.GetProjects)
+	projectsGroup.Get("/:id", projects.GetProject)
+	projectsGroup.Post("", projects.CreateProject)
+	projectsGroup.Patch("/:id", projects.UpdateProject)
+	projectsGroup.Delete("/:id", projects.DeleteProject)
+
+	// Researches routes
+	researchesGroup := app.Group("/v1/researches")
+	researchesGroup.Get("", researches.GetResearches)
+	researchesGroup.Get("/:id", researches.GetResearch)
+	researchesGroup.Post("", researches.CreateResearch)
+	researchesGroup.Patch("/:id", researches.UpdateResearch)
+	researchesGroup.Delete("/:id", researches.DeleteResearch)
+
+	app.Use(cors.New())
+
+	app.Listen(":8080")
 }

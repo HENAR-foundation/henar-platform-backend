@@ -1,0 +1,546 @@
+basePath: /
+definitions:
+  types.ModerationStatus:
+    enum:
+    - 0
+    - 1
+    - 2
+    type: integer
+    x-enum-varnames:
+    - ForRevision
+    - Accepted
+    - Rejected
+  types.Project:
+    properties:
+      _id:
+        type: string
+      applicants:
+        items:
+          type: string
+        type: array
+      author:
+        type: string
+      covers:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      moderation_status:
+        $ref: '#/definitions/types.ModerationStatus'
+      objective:
+        type: string
+      reason_of_reject:
+        type: string
+      rejected_applicants:
+        items:
+          type: string
+        type: array
+      slug:
+        type: string
+      successful_applicants:
+        items:
+          type: string
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      views:
+        type: integer
+      who_is_needed:
+        type: string
+    required:
+    - author
+    - description
+    - objective
+    - tags
+    - title
+    - who_is_needed
+    type: object
+  types.Research:
+    properties:
+      _id:
+        type: string
+      description:
+        type: string
+      link:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    required:
+    - description
+    - link
+    - tags
+    - title
+    type: object
+  types.Tag:
+    properties:
+      _id:
+        type: string
+      translations:
+        $ref: '#/definitions/types.Translations'
+    type: object
+  types.Translations:
+    properties:
+      en:
+        type: string
+      hy:
+        type: string
+      ru:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  title: Henar
+  version: "1.0"
+paths:
+  /v1/projects:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of all projects in the database.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.Project'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get all projects
+      tags:
+      - projects
+    post:
+      consumes:
+      - application/json
+      description: Creates a new project in the database.
+      parameters:
+      - description: Project
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/types.Project'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/types.Project'
+        "400":
+          description: Error parsing request body
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create a project
+      tags:
+      - projects
+  /v1/projects/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a project from the database based on the provided ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Project deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid ID
+          schema:
+            type: string
+        "404":
+          description: Project not found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete a project
+      tags:
+      - projects
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a project by its ID and increments its view count.
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Project'
+        "400":
+          description: Invalid ID
+          schema:
+            type: string
+        "404":
+          description: Project not found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get a project by ID
+      tags:
+      - projects
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing project in the database.
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Project
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/types.Project'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No content
+        "400":
+          description: Invalid ID or error parsing request body
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update a project
+      tags:
+      - projects
+  /v1/researches:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all researches
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.Research'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get all researches
+      tags:
+      - researches
+    post:
+      consumes:
+      - application/json
+      description: Creates a new research
+      parameters:
+      - description: Research Object
+        in: body
+        name: research
+        required: true
+        schema:
+          $ref: '#/definitions/types.Research'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/types.Research'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create research
+      tags:
+      - researches
+  /v1/researches/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a research document by its ID
+      parameters:
+      - description: Research ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Research deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid ID
+          schema:
+            type: string
+        "404":
+          description: Research not found
+          schema:
+            type: string
+        "500":
+          description: 'Error deleting research: <error message>'
+          schema:
+            type: string
+      summary: Delete research by ID
+      tags:
+      - researches
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a research by its ID
+      parameters:
+      - description: Research ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Research'
+        "400":
+          description: Invalid ID
+          schema:
+            type: string
+        "404":
+          description: Research not found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get research by ID
+      tags:
+      - researches
+    put:
+      consumes:
+      - application/json
+      description: Updates a research by its ID
+      parameters:
+      - description: Research ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Research Object
+        in: body
+        name: research
+        required: true
+        schema:
+          $ref: '#/definitions/types.Research'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Research'
+        "400":
+          description: Invalid ID or Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update research by ID
+      tags:
+      - researches
+  /v1/tags:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of all tags in the database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.Tag'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get all tags
+      tags:
+      - tags
+    post:
+      consumes:
+      - application/json
+      description: Creates a new tag in the database
+      parameters:
+      - description: Tag object to create
+        in: body
+        name: tag
+        required: true
+        schema:
+          $ref: '#/definitions/types.Tag'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created tag object
+          schema:
+            $ref: '#/definitions/types.Tag'
+        "400":
+          description: Error parsing request body or validation error
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create a new tag
+      tags:
+      - tags
+  /v1/tags/{id}:
+    delete:
+      description: Deletes a tag with the given ID from the database
+      parameters:
+      - description: Tag ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Tag deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid ID
+          schema:
+            type: string
+        "404":
+          description: Tag not found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete tag by ID
+      tags:
+      - tags
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a tag by its ID
+      parameters:
+      - description: Tag ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Tag'
+        "400":
+          description: Invalid ID
+          schema:
+            type: string
+        "404":
+          description: Tag not found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get tag by ID
+      tags:
+      - tags
+    put:
+      consumes:
+      - application/json
+      description: Updates a tag with the given ID in the database
+      parameters:
+      - description: Tag ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tag object to update
+        in: body
+        name: tag
+        required: true
+        schema:
+          $ref: '#/definitions/types.Tag'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated tag object
+          schema:
+            $ref: '#/definitions/types.Tag'
+        "400":
+          description: Invalid ID or error parsing request body or validation error
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update tag by ID
+      tags:
+      - tags
+swagger: "2.0"

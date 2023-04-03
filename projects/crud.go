@@ -7,7 +7,7 @@ import (
 	"henar-backend/types"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,16 +15,26 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
-func GetProject(w http.ResponseWriter, r *http.Request) {
+// GetProject retrieves a project by its ID and increments its view count.
+// @Summary Get a project by ID
+// @Description Retrieves a project by its ID and increments its view count.
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} types.Project
+// @Failure 400 {string} string "Invalid ID"
+// @Failure 404 {string} string "Project not found"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/projects/{id} [get]
+func GetProject(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
 	// Get the project ID from the URL path parameter
-	vars := mux.Vars(r)
-	id := vars["projectId"]
+	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
 	filter := bson.D{{Key: "_id", Value: objId}}
@@ -42,31 +52,37 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 	).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			http.Error(w, "Project not found", http.StatusNotFound)
-			return
+			return c.Status(http.StatusNotFound).SendString("Project not found")
 		}
-		http.Error(w, "Error updating project: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
 	}
 
 	// Marshal the project struct to JSON format
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
-		http.Error(w, "Error encoding JSON: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
 	// Set the response headers and write the response body
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(jsonBytes)
+	c.Set("Content-Type", "application/json")
+	c.Status(http.StatusOK)
+	_, err = c.Write(jsonBytes)
 	if err != nil {
-		http.Error(w, "Error writing response: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error writing response: " + err.Error())
 	}
+	return nil
 }
 
-func GetProjects(w http.ResponseWriter, r *http.Request) {
+// GetProjects retrieves a list of all projects in the database.
+// @Summary Get all projects
+// @Description Retrieves a list of all projects in the database.
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Success 200 {array} types.Project
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/projects [get]
+func GetProjects(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
 	filter := bson.M{}
@@ -74,58 +90,63 @@ func GetProjects(w http.ResponseWriter, r *http.Request) {
 	// Query the database and get the cursor
 	cursor, err := collection.Find(context.TODO(), filter)
 	if err != nil {
-		http.Error(w, "Error finding projects", http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error finding projects")
 	}
 
 	// Get the results from the cursor
 	var results []types.Project
 	if err := cursor.All(context.TODO(), &results); err != nil {
-		http.Error(w, "Error querying database: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error querying database: " + err.Error())
 	}
 
 	// Marshal the result to JSON
 	jsonBytes, err := json.Marshal(results)
 	if err != nil {
-		http.Error(w, "Error encoding JSON: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
 	// Set the response headers and write the response body
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(jsonBytes)
+	c.Set("Content-Type", "application/json")
+	c.Status(http.StatusOK)
+	_, err = c.Write(jsonBytes)
 	if err != nil {
-		http.Error(w, "Error writing response: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error writing response: " + err.Error())
 	}
+	return nil
 }
 
-func CreateProject(w http.ResponseWriter, r *http.Request) {
+// CreateProject creates a new project in the database.
+// @Summary Create a project
+// @Description Creates a new project in the database.
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param project body types.Project true "Project"
+// @Success 201 {object} types.Project
+// @Failure 400 {string} string "Error parsing request body"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/projects [post]
+func CreateProject(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
 	// Parse request body into project struct
 	var project types.Project
-	err := json.NewDecoder(r.Body).Decode(&project)
+	err := c.BodyParser(&project)
 	if err != nil {
-		http.Error(w, "Error parsing request body: "+err.Error(), http.StatusBadRequest)
-		return
+		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
 	// Validate the required fields
 	v := validator.New()
 	err = v.Struct(project)
 	if err != nil {
-		http.Error(w, "Error retrieving created project: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving created project: " + err.Error())
 	}
 
 	// Insert project document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), project)
 	if err != nil {
-		http.Error(w, "Error creating project: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error creating project: " + err.Error())
 	}
 
 	// Get the ID of the inserted project document
@@ -136,53 +157,47 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 	var createdProject types.Project
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdProject)
 	if err != nil {
-		http.Error(w, "Error retrieving updated project: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Marshal the project struct to JSON format
-	jsonBytes, err := json.Marshal(createdProject)
-	if err != nil {
-		http.Error(w, "Error encoding JSON: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
 	}
 
 	// Set the response headers and write the response body
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	_, err = w.Write(jsonBytes)
-	if err != nil {
-		http.Error(w, "Error writing response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	return c.Status(http.StatusCreated).JSON(createdProject)
 }
 
-func UpdateProject(w http.ResponseWriter, r *http.Request) {
+// UpdateProject updates an existing project in the database.
+// @Summary Update a project
+// @Description Updates an existing project in the database.
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Param project body types.Project true "Project"
+// @Success 204 "No content"
+// @Failure 400 {string} string "Invalid ID or error parsing request body"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/projects/{id} [put]
+func UpdateProject(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
 	// Get the project ID from the URL path parameter
-	params := mux.Vars(r)
-	id := params["projectId"]
+	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
 	// Parse the request body into a project struct
 	var project types.Project
-	err = json.NewDecoder(r.Body).Decode(&project)
+	err = c.BodyParser(&project)
 	if err != nil {
-		http.Error(w, "Error parsing request body: "+err.Error(), http.StatusBadRequest)
-		return
+		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
 	// Validate the required fields
 	v := validator.New()
 	err = v.Struct(project)
 	if err != nil {
-		http.Error(w, "Validation error: "+err.Error(), http.StatusBadRequest)
-		return
+		return c.Status(http.StatusBadRequest).SendString("Validation error: " + err.Error())
 	}
 
 	// Update the project document in MongoDB
@@ -190,8 +205,7 @@ func UpdateProject(w http.ResponseWriter, r *http.Request) {
 	update := bson.M{"$set": project}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
-		http.Error(w, "Error updating project: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
 	}
 
 	// Retrieve the updated project from MongoDB
@@ -199,36 +213,32 @@ func UpdateProject(w http.ResponseWriter, r *http.Request) {
 	var updatedProject types.Project
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedProject)
 	if err != nil {
-		http.Error(w, "Error retrieving updated project: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
 	}
 
-	// Marshal the updated project struct to JSON format
-	jsonBytes, err := json.Marshal(updatedProject)
-	if err != nil {
-		http.Error(w, "Error creating response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(jsonBytes)
-	if err != nil {
-		http.Error(w, "Error writing response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// Set the response headers and write the response body
+	return c.Status(http.StatusOK).JSON(updatedProject)
 }
 
-func DeleteProject(w http.ResponseWriter, r *http.Request) {
+// @Summary Delete a project
+// @Description Deletes a project from the database based on the provided ID
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {string} string "Project deleted successfully"
+// @Failure 400 {string} string "Invalid ID"
+// @Failure 404 {string} string "Project not found"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/projects/{id} [delete]
+func DeleteProject(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
 	// Get the project ID from the URL path parameter
-	vars := mux.Vars(r)
-	id := vars["projectId"]
+	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
 	filter := bson.D{{Key: "_id", Value: objId}}
@@ -236,20 +246,13 @@ func DeleteProject(w http.ResponseWriter, r *http.Request) {
 	// Delete project document from MongoDB
 	result, err := collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
-		http.Error(w, "Error deleting project: "+err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(http.StatusInternalServerError).SendString("Error deleting project: " + err.Error())
 	}
 
 	// Check if any documents were deleted
 	if result.DeletedCount == 0 {
-		http.Error(w, "Project not found", http.StatusNotFound)
-		return
+		return c.Status(http.StatusNotFound).SendString("Project not found")
 	}
 
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte("Project deleted successfully"))
-	if err != nil {
-		http.Error(w, "Error writing response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	return c.SendString("Project deleted successfully")
 }
