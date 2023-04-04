@@ -2,6 +2,7 @@ package main
 
 import (
 	"henar-backend/db"
+	"henar-backend/events"
 	"henar-backend/projects"
 	"henar-backend/researches"
 	"henar-backend/statistics"
@@ -27,6 +28,14 @@ func main() {
 	app.Use(logger.New())
 
 	app.Get("/swagger/*", swagger.HandlerDefault)
+
+	// Events routes
+	eventsGroup := app.Group("/v1/events")
+	eventsGroup.Get("", events.GetEvents)
+	eventsGroup.Get("/:id", events.GetEvent)
+	eventsGroup.Post("", events.CreateEvent)
+	eventsGroup.Patch("/:id", events.UpdateEvent)
+	eventsGroup.Delete("/:id", events.DeleteEvent)
 
 	// Statistics routes
 	statisticsGroup := app.Group("/v1/statistics")

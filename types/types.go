@@ -69,15 +69,17 @@ type Notification struct {
 }
 
 type Event struct {
-	Id           int64     `json:"id"`
-	CreatedAt    string    `json:"created_at"`
-	Cover        string    `json:"cover"`
-	Title        string    `json:"title"`
-	Description  string    `json:"description"`
-	Location     int64     `json:"location"`
-	Date         time.Time `json:"date"`
-	TermsOfVisit string    `json:"terms_of_visit"`
-	Tags         []int64   `json:"tags"`
+	ID               primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
+	Cover            string               `json:"cover"`
+	Title            Translations         `json:"title"`
+	Description      Translations         `json:"description"`
+	Location         primitive.ObjectID   `json:"location" validate:"required"`
+	Date             time.Time            `json:"date" validate:"required"`
+	TermsOfVisit     Translations         `json:"terms_of_visit" bson:"terms_of_visit"`
+	Tags             []primitive.ObjectID `json:"tags" validate:"required"`
+	Author           primitive.ObjectID   `json:"author" validate:"required" bson:"author"`
+	ModerationStatus ModerationStatus     `json:"moderation_status" bson:"moderation_status"`
+	ReasonOfReject   string               `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
 }
 
 type ModerationStatus int
