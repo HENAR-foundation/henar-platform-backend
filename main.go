@@ -4,6 +4,7 @@ import (
 	"henar-backend/db"
 	"henar-backend/projects"
 	"henar-backend/researches"
+	"henar-backend/statistics"
 	"henar-backend/tags"
 
 	"github.com/gofiber/fiber/v2"
@@ -26,6 +27,14 @@ func main() {
 	app.Use(logger.New())
 
 	app.Get("/swagger/*", swagger.HandlerDefault)
+
+	// Statistics routes
+	statisticsGroup := app.Group("/v1/statistics")
+	statisticsGroup.Get("", statistics.GetStatistics)
+	statisticsGroup.Get("/:id", statistics.GetStatistic)
+	statisticsGroup.Post("", statistics.CreateStatistic)
+	statisticsGroup.Patch("/:id", statistics.UpdateStatistic)
+	statisticsGroup.Delete("/:id", statistics.DeleteStatistic)
 
 	// Tags routes
 	tagsGroup := app.Group("/v1/tags")

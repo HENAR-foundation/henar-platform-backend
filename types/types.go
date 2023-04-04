@@ -115,11 +115,11 @@ type Research struct {
 }
 
 type Statistic struct {
-	Id        int64  `json:"id"`
-	Title     string `json:"title"`
-	Year      int64  `json:"year"`
-	Count     int64  `json:"count"`
-	YearDelta int64  `json:"year_delta"`
+	ID           primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Translations Translations       `json:"translations"`
+	Year         int64              `json:"year" validate:"required"`
+	Count        int64              `json:"count" validate:"required"`
+	YearDelta    *int64             `json:"year_delta" validate:"required"`
 }
 
 type Location struct {
@@ -132,11 +132,11 @@ type Location struct {
 
 type Tag struct {
 	ID           primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Translations Translations       `json:"translations,omitempty" bson:"translations,omitempty"`
+	Translations Translations       `json:"translations" bson:"translations"`
 }
 
 type Translations struct {
-	En string `bson:"en" json:"en"`
-	Ru string `bson:"ru" json:"ru"`
-	Hy string `bson:"hy" json:"hy"`
+	En string `bson:"en" json:"en" validate:"required_without_all=Ru Hy"`
+	Ru string `bson:"ru" json:"ru" validate:"required_without_all=En Hy"`
+	Hy string `bson:"hy" json:"hy" validate:"required_without_all=En Ru"`
 }
