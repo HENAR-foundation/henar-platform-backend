@@ -80,6 +80,23 @@ definitions:
     - tags
     - title
     type: object
+  types.Statistic:
+    properties:
+      _id:
+        type: string
+      count:
+        type: integer
+      translations:
+        $ref: '#/definitions/types.Translations'
+      year:
+        type: integer
+      year_delta:
+        type: integer
+    required:
+    - count
+    - year
+    - year_delta
+    type: object
   types.Tag:
     properties:
       _id:
@@ -398,6 +415,155 @@ paths:
       summary: Update research by ID
       tags:
       - researches
+  /v1/statistics:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.Statistic'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get all statistics
+      tags:
+      - statistics
+    post:
+      consumes:
+      - application/json
+      description: Creates a new statistic
+      parameters:
+      - description: Statistic Object
+        in: body
+        name: statistic
+        required: true
+        schema:
+          $ref: '#/definitions/types.Statistic'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/types.Statistic'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create statistic
+      tags:
+      - statistics
+  /v1/statistics/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a statistic document by its ID
+      parameters:
+      - description: Statistic ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Statistic deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid ID
+          schema:
+            type: string
+        "404":
+          description: Statistic not found
+          schema:
+            type: string
+        "500":
+          description: 'Error deleting statistic: <error message>'
+          schema:
+            type: string
+      summary: Delete statistic by ID
+      tags:
+      - statistics
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a statistic by its ID
+      parameters:
+      - description: Statistic ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Statistic'
+        "400":
+          description: Invalid ID
+          schema:
+            type: string
+        "404":
+          description: Statistic not found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get statistic by ID
+      tags:
+      - statistics
+    put:
+      consumes:
+      - application/json
+      description: Updates a statistic by its ID
+      parameters:
+      - description: Statistic ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Statistic Object
+        in: body
+        name: statistic
+        required: true
+        schema:
+          $ref: '#/definitions/types.Statistic'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Statistic'
+        "400":
+          description: Invalid ID or Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update statistic by ID
+      tags:
+      - statistics
   /v1/tags:
     get:
       consumes:
