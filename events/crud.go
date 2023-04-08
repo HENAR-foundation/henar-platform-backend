@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"henar-backend/db"
 	"henar-backend/types"
+	"henar-backend/utils"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -22,13 +23,21 @@ import (
 // @Success 200 {array} types.Event
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/events [get]
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
 func GetEvents(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("events")
 
 	filter := bson.M{}
 
+	// Get the pagination options for the query
+	findOptions, err := utils.GetPaginationOptions(c)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
+	}
+
 	// Query the database and get the cursor
-	cursor, err := collection.Find(context.TODO(), filter)
+	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error finding events")
 	}
@@ -51,33 +60,28 @@ func GetEvents(c *fiber.Ctx) error {
 	return c.Send(jsonBytes)
 }
 
-// @Summary Get event by ID
-// @Description Retrieves a event by its ID
+// @Summary Get event by slug
+// @Description Retrieves a event by its slug
 // @Tags events
 // @Accept json
 // @Produce json
-// @Param id path string true "Event ID"
+// @Param slug path string true "Event slug"
 // @Success 200 {object} types.Event
-// @Failure 400 {string} string "Invalid ID"
+// @Failure 400 {string} string "Invalid slug"
 // @Failure 404 {string} string "Event not found"
 // @Failure 500 {string} string "Internal Server Error"
-// @Router /v1/events/{id} [get]
+// @Router /v1/events/{slug} [get]
 func GetEvent(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("events")
 
-	// Get the event ID from the URL path parameter
-	id := c.Params("id")
-	objId, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid ID")
-	}
+	slug := c.Params("slug")
 
-	filter := bson.D{{Key: "_id", Value: objId}}
+	filter := bson.D{{Key: "slug", Value: slug}}
 
 	var result types.Event
 
-	// Find the event by ID
-	err = collection.FindOne(
+	// Find the event by slug
+	err := collection.FindOne(
 		context.TODO(),
 		filter,
 	).Decode(&result)
@@ -119,6 +123,9 @@ func CreateEvent(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
+
+	slugText := utils.CreateSlug(event.Title)
+	event.Slug = slugText
 
 	// Validate the required fields
 	v := validator.New()
@@ -175,6 +182,9 @@ func UpdateEvent(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
+
+	slugText := utils.CreateSlug(event.Title)
+	event.Slug = slugText
 
 	// Validate the required fields
 	v := validator.New()

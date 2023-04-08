@@ -14,11 +14,11 @@ const (
 )
 
 type Contacts struct {
-	Emain    string `json:"emain"`
-	Phone    string `json:"phone"`
-	Facebook string `json:"facebook"`
-	Insta    string `json:"insta"`
-	Linkedin string `json:"linkedin"`
+	Emain     string `json:"emain"`
+	Phone     string `json:"phone"`
+	Facebook  string `json:"facebook"`
+	Instagram string `json:"instagram"`
+	Linkedin  string `json:"linkedin"`
 }
 
 type User struct {
@@ -70,6 +70,7 @@ type Notification struct {
 
 type Event struct {
 	ID               primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
+	Slug             string               `json:"slug"`
 	Cover            string               `json:"cover"`
 	Title            Translations         `json:"title"`
 	Description      Translations         `json:"description"`
@@ -92,13 +93,13 @@ const (
 
 type Project struct {
 	ID                   primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
-	Slug                 string               `json:"slug" bson:"slug"`
+	Slug                 string               `json:"slug"`
 	Covers               []string             `json:"covers,omitempty" bson:"covers,omitempty"`
 	Author               primitive.ObjectID   `json:"author" validate:"required" bson:"author"`
-	Title                string               `json:"title" validate:"required" bson:"title"`
-	Description          string               `json:"description" validate:"required" bson:"description"`
-	Objective            string               `json:"objective" validate:"required" bson:"objective"`
-	WhoIsNeeded          string               `json:"who_is_needed" validate:"required" bson:"who_is_needed"`
+	Title                Translations         `json:"title"`
+	Description          Translations         `json:"description"`
+	Objective            Translations         `json:"objective"`
+	WhoIsNeeded          Translations         `json:"who_is_needed"`
 	Tags                 []primitive.ObjectID `json:"tags" validate:"required" bson:"tags"`
 	Applicants           []primitive.ObjectID `json:"applicants,omitempty" bson:"applicants,omitempty"`
 	Views                int64                `json:"views" bson:"views"`
@@ -109,19 +110,23 @@ type Project struct {
 }
 
 type Research struct {
-	ID          primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
-	Title       string               `json:"title" validate:"required"`
-	Description string               `json:"description" validate:"required"`
-	Tags        []primitive.ObjectID `json:"tags" validate:"required"`
-	Link        string               `json:"link" validate:"required"`
+	ID               primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
+	Slug             string               `json:"slug"`
+	Title            Translations         `json:"title"`
+	Description      Translations         `json:"description"`
+	Tags             []primitive.ObjectID `json:"tags" validate:"required"`
+	Link             string               `json:"link" validate:"required"`
+	Author           primitive.ObjectID   `json:"author" validate:"required"`
+	ModerationStatus ModerationStatus     `json:"moderation_status" bson:"moderation_status"`
+	ReasonOfReject   string               `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
 }
 
 type Statistic struct {
-	ID           primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Translations Translations       `json:"translations"`
-	Year         int64              `json:"year" validate:"required"`
-	Count        int64              `json:"count" validate:"required"`
-	YearDelta    *int64             `json:"year_delta" validate:"required"`
+	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Title     Translations       `json:"translations"`
+	Year      int64              `json:"year" validate:"required"`
+	Count     int64              `json:"count" validate:"required"`
+	YearDelta *int64             `json:"year_delta" validate:"required"`
 }
 
 type Location struct {
@@ -133,8 +138,8 @@ type Location struct {
 }
 
 type Tag struct {
-	ID           primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Translations Translations       `json:"translations" bson:"translations"`
+	ID    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Title Translations       `json:"title"`
 }
 
 type Translations struct {

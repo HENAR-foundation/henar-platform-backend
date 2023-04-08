@@ -32,7 +32,7 @@ func main() {
 	// Events routes
 	eventsGroup := app.Group("/v1/events")
 	eventsGroup.Get("", events.GetEvents)
-	eventsGroup.Get("/:id", events.GetEvent)
+	eventsGroup.Get("/:slug", events.GetEvent)
 	eventsGroup.Post("", events.CreateEvent)
 	eventsGroup.Patch("/:id", events.UpdateEvent)
 	eventsGroup.Delete("/:id", events.DeleteEvent)
@@ -56,7 +56,7 @@ func main() {
 	// Projects routes
 	projectsGroup := app.Group("/v1/projects")
 	projectsGroup.Get("", projects.GetProjects)
-	projectsGroup.Get("/:id", projects.GetProject)
+	projectsGroup.Get("/:slug", projects.GetProject)
 	projectsGroup.Post("", projects.CreateProject)
 	projectsGroup.Patch("/:id", projects.UpdateProject)
 	projectsGroup.Delete("/:id", projects.DeleteProject)
@@ -64,7 +64,7 @@ func main() {
 	// Researches routes
 	researchesGroup := app.Group("/v1/researches")
 	researchesGroup.Get("", researches.GetResearches)
-	researchesGroup.Get("/:id", researches.GetResearch)
+	researchesGroup.Get("/:slug", researches.GetResearch)
 	researchesGroup.Post("", researches.CreateResearch)
 	researchesGroup.Patch("/:id", researches.UpdateResearch)
 	researchesGroup.Delete("/:id", researches.DeleteResearch)
