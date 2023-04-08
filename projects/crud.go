@@ -78,13 +78,21 @@ func GetProject(c *fiber.Ctx) error {
 // @Success 200 {array} types.Project
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/projects [get]
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
 func GetProjects(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
 	filter := bson.M{}
 
+	// Get the pagination options for the query
+	findOptions, err := utils.GetPaginationOptions(c)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
+	}
+
 	// Query the database and get the cursor
-	cursor, err := collection.Find(context.TODO(), filter)
+	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error finding projects")
 	}
