@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"henar-backend/db"
 	"henar-backend/types"
+	"henar-backend/utils"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -15,36 +16,31 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
-// GetProject retrieves a project by its ID and increments its view count.
-// @Summary Get a project by ID
-// @Description Retrieves a project by its ID and increments its view count.
+// GetProject retrieves a project by its slug and increments its view count.
+// @Summary Get a project by slug
+// @Description Retrieves a project by its slug and increments its view count.
 // @Tags projects
 // @Accept json
 // @Produce json
-// @Param id path string true "Project ID"
+// @Param slug path string true "Project slug"
 // @Success 200 {object} types.Project
-// @Failure 400 {string} string "Invalid ID"
+// @Failure 400 {string} string "Invalid slug"
 // @Failure 404 {string} string "Project not found"
 // @Failure 500 {string} string "Internal Server Error"
-// @Router /v1/projects/{id} [get]
+// @Router /v1/projects/{slug} [get]
 func GetProject(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
-	// Get the project ID from the URL path parameter
-	id := c.Params("id")
-	objId, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
-	}
+	slug := c.Params("slug")
 
-	filter := bson.D{{Key: "_id", Value: objId}}
+	filter := bson.D{{Key: "slug", Value: slug}}
 	update := bson.D{{Key: "$inc", Value: bson.D{{Key: "views", Value: 1}}}}
 	options := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
 	var result types.Project
 
-	// Find the document by ID, increment its "views" and retrieve the updated document
-	err = collection.FindOneAndUpdate(
+	// Find the document by slug, increment its "views" and retrieve the updated document
+	err := collection.FindOneAndUpdate(
 		context.TODO(),
 		filter,
 		update,
@@ -136,6 +132,9 @@ func CreateProject(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
+	slugText := utils.CreateSlug(project.Title)
+	project.Slug = slugText
+
 	// Validate the required fields
 	v := validator.New()
 	err = v.Struct(project)
@@ -192,6 +191,9 @@ func UpdateProject(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
+
+	slugText := utils.CreateSlug(project.Title)
+	project.Slug = slugText
 
 	// Validate the required fields
 	v := validator.New()

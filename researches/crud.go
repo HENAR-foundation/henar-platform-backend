@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"henar-backend/db"
 	"henar-backend/types"
+	"henar-backend/utils"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -51,33 +52,28 @@ func GetResearches(c *fiber.Ctx) error {
 	return c.Send(jsonBytes)
 }
 
-// @Summary Get research by ID
-// @Description Retrieves a research by its ID
+// @Summary Get research by slug
+// @Description Retrieves a research by its slug
 // @Tags researches
 // @Accept json
 // @Produce json
-// @Param id path string true "Research ID"
+// @Param slug path string true "Research slug"
 // @Success 200 {object} types.Research
-// @Failure 400 {string} string "Invalid ID"
+// @Failure 400 {string} string "Invalid slug"
 // @Failure 404 {string} string "Research not found"
 // @Failure 500 {string} string "Internal Server Error"
-// @Router /v1/researches/{id} [get]
+// @Router /v1/researches/{slug} [get]
 func GetResearch(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("researches")
 
-	// Get the research ID from the URL path parameter
-	id := c.Params("id")
-	objId, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid ID")
-	}
+	slug := c.Params("slug")
 
-	filter := bson.D{{Key: "_id", Value: objId}}
+	filter := bson.D{{Key: "slug", Value: slug}}
 
 	var result types.Research
 
-	// Find the research by ID
-	err = collection.FindOne(
+	// Find the research by slug
+	err := collection.FindOne(
 		context.TODO(),
 		filter,
 	).Decode(&result)
@@ -119,6 +115,9 @@ func CreateResearch(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
+
+	slugText := utils.CreateSlug(research.Title)
+	research.Slug = slugText
 
 	// Validate the required fields
 	v := validator.New()
@@ -175,6 +174,9 @@ func UpdateResearch(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
+
+	slugText := utils.CreateSlug(research.Title)
+	research.Slug = slugText
 
 	// Validate the required fields
 	v := validator.New()

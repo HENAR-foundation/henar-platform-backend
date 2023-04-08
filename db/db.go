@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -27,6 +28,18 @@ func GetCollection(collection string) (*mongo.Collection, error) {
 	return client.Database("henar").Collection(collection), nil
 }
 
+func createIndex(collection *mongo.Collection) {
+	indexModel := mongo.IndexModel{
+		Keys:    bson.M{"slug": 1},
+		Options: options.Index().SetUnique(true),
+	}
+	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Created index %s on collection %s", indexName, collection.Name())
+}
+
 func InitDb() {
 	clientOptions := GetClientOptions()
 
@@ -35,6 +48,14 @@ func InitDb() {
 		log.Fatal(err)
 	} else {
 		client = newClient
+
+		// Add indexes
+		researches, _ := GetCollection("researches")
+		createIndex(researches)
+		projects, _ := GetCollection("projects")
+		createIndex(projects)
+		events, _ := GetCollection("events")
+		createIndex(events)
 	}
 }
 
