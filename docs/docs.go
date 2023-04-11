@@ -29,6 +29,20 @@ const docTemplate = `{
                     "events"
                 ],
                 "summary": "Get all events",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -93,54 +107,6 @@ const docTemplate = `{
             }
         },
         "/v1/events/{id}": {
-            "get": {
-                "description": "Retrieves a event by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "events"
-                ],
-                "summary": "Get event by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Event ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/types.Event"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "Event not found",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
             "put": {
                 "description": "Updates a event by its ID",
                 "consumes": [
@@ -241,6 +207,346 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/events/{slug}": {
+            "get": {
+                "description": "Retrieves a event by its slug",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Get event by slug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Event"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid slug",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/locations": {
+            "get": {
+                "description": "Retrieves all locations",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "locations"
+                ],
+                "summary": "Get all locations",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.Location"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new research",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "locations"
+                ],
+                "summary": "Create research",
+                "parameters": [
+                    {
+                        "description": "Location Object",
+                        "name": "research",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.Location"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/types.Location"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/locations/suggestions": {
+            "get": {
+                "description": "Returns a list of suggested addresses based on a query string.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "locations"
+                ],
+                "summary": "Get Location Suggestions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Query string for location suggestions",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Language of response",
+                        "name": "lanquage",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Suggestions"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/locations/{id}": {
+            "put": {
+                "description": "Updates a research by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "locations"
+                ],
+                "summary": "Update research by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Location ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Location Object",
+                        "name": "research",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.Location"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Location"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID or Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a research document by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "locations"
+                ],
+                "summary": "Delete research by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Location ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Location deleted successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Location not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error deleting research: \u003cerror message\u003e",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/locations/{slug}": {
+            "get": {
+                "description": "Retrieves a research by its slug",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "locations"
+                ],
+                "summary": "Get research by slug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Location slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Location"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid slug",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Location not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects": {
             "get": {
                 "description": "Retrieves a list of all projects in the database.",
@@ -254,6 +560,20 @@ const docTemplate = `{
                     "projects"
                 ],
                 "summary": "Get all projects",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -318,54 +638,6 @@ const docTemplate = `{
             }
         },
         "/v1/projects/{id}": {
-            "get": {
-                "description": "Retrieves a project by its ID and increments its view count.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "projects"
-                ],
-                "summary": "Get a project by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/types.Project"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "Project not found",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
             "put": {
                 "description": "Updates an existing project in the database.",
                 "consumes": [
@@ -463,6 +735,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/projects/{slug}": {
+            "get": {
+                "description": "Retrieves a project by its slug and increments its view count.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Get a project by slug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Project"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid slug",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Project not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/researches": {
             "get": {
                 "description": "Retrieves all researches",
@@ -476,6 +798,20 @@ const docTemplate = `{
                     "researches"
                 ],
                 "summary": "Get all researches",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -540,54 +876,6 @@ const docTemplate = `{
             }
         },
         "/v1/researches/{id}": {
-            "get": {
-                "description": "Retrieves a research by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "researches"
-                ],
-                "summary": "Get research by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Research ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/types.Research"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "Research not found",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
             "put": {
                 "description": "Updates a research by its ID",
                 "consumes": [
@@ -688,6 +976,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/researches/{slug}": {
+            "get": {
+                "description": "Retrieves a research by its slug",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "researches"
+                ],
+                "summary": "Get research by slug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Research"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid slug",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Research not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistics": {
             "get": {
                 "description": "Retrieves all statistics",
@@ -701,6 +1039,20 @@ const docTemplate = `{
                     "statistics"
                 ],
                 "summary": "Get all statistics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -926,6 +1278,20 @@ const docTemplate = `{
                     "tags"
                 ],
                 "summary": "Get all tags",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1167,6 +1533,9 @@ const docTemplate = `{
                 "reason_of_reject": {
                     "type": "string"
                 },
+                "slug": {
+                    "type": "string"
+                },
                 "tags": {
                     "type": "array",
                     "items": {
@@ -1178,6 +1547,42 @@ const docTemplate = `{
                 },
                 "title": {
                     "$ref": "#/definitions/types.Translations"
+                }
+            }
+        },
+        "types.Location": {
+            "type": "object",
+            "required": [
+                "country",
+                "value"
+            ],
+            "properties": {
+                "_id": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "extra_info": {
+                    "type": "string"
+                },
+                "house": {
+                    "type": "string"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "settlement": {
+                    "type": "string"
+                },
+                "street": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },
@@ -1198,11 +1603,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "author",
-                "description",
-                "objective",
-                "tags",
-                "title",
-                "who_is_needed"
+                "tags"
             ],
             "properties": {
                 "_id": {
@@ -1224,13 +1625,13 @@ const docTemplate = `{
                     }
                 },
                 "description": {
-                    "type": "string"
+                    "$ref": "#/definitions/types.Translations"
                 },
                 "moderation_status": {
                     "$ref": "#/definitions/types.ModerationStatus"
                 },
                 "objective": {
-                    "type": "string"
+                    "$ref": "#/definitions/types.Translations"
                 },
                 "reason_of_reject": {
                     "type": "string"
@@ -1257,32 +1658,43 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "$ref": "#/definitions/types.Translations"
                 },
                 "views": {
                     "type": "integer"
                 },
                 "who_is_needed": {
-                    "type": "string"
+                    "$ref": "#/definitions/types.Translations"
                 }
             }
         },
         "types.Research": {
             "type": "object",
             "required": [
-                "description",
+                "author",
                 "link",
-                "tags",
-                "title"
+                "tags"
             ],
             "properties": {
                 "_id": {
                     "type": "string"
                 },
-                "description": {
+                "author": {
                     "type": "string"
                 },
+                "description": {
+                    "$ref": "#/definitions/types.Translations"
+                },
                 "link": {
+                    "type": "string"
+                },
+                "moderation_status": {
+                    "$ref": "#/definitions/types.ModerationStatus"
+                },
+                "reason_of_reject": {
+                    "type": "string"
+                },
+                "slug": {
                     "type": "string"
                 },
                 "tags": {
@@ -1292,7 +1704,7 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "$ref": "#/definitions/types.Translations"
                 }
             }
         },
@@ -1321,13 +1733,25 @@ const docTemplate = `{
                 }
             }
         },
+        "types.Suggestions": {
+            "type": "object",
+            "properties": {
+                "suggestions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                }
+            }
+        },
         "types.Tag": {
             "type": "object",
             "properties": {
                 "_id": {
                     "type": "string"
                 },
-                "translations": {
+                "title": {
                     "$ref": "#/definitions/types.Translations"
                 }
             }

@@ -130,11 +130,19 @@ type Statistic struct {
 }
 
 type Location struct {
-	Id        int64  `json:"id"`
-	State     string `json:"state"`
-	City      string `json:"city"`
-	Street    string `json:"street"`
-	ExtraInfo string `json:"extra_info"`
+	ID         primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Value      string             `json:"value" validate:"required"`
+	Country    string             `json:"country" validate:"required"`
+	Region     string             `json:"region"`
+	City       string             `json:"city"`
+	Settlement string             `json:"settlement"`
+	Street     string             `json:"street"`
+	House      string             `json:"house"`
+	ExtraInfo  string             `json:"extra_info"`
+}
+
+type Suggestions struct {
+	Suggestions []map[string]interface{}
 }
 
 type Tag struct {

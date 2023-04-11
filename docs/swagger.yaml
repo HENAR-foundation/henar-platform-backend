@@ -18,6 +18,8 @@ definitions:
         $ref: '#/definitions/types.ModerationStatus'
       reason_of_reject:
         type: string
+      slug:
+        type: string
       tags:
         items:
           type: string
@@ -31,6 +33,30 @@ definitions:
     - date
     - location
     - tags
+    type: object
+  types.Location:
+    properties:
+      _id:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      extra_info:
+        type: string
+      house:
+        type: string
+      region:
+        type: string
+      settlement:
+        type: string
+      street:
+        type: string
+      value:
+        type: string
+    required:
+    - country
+    - value
     type: object
   types.ModerationStatus:
     enum:
@@ -57,11 +83,11 @@ definitions:
           type: string
         type: array
       description:
-        type: string
+        $ref: '#/definitions/types.Translations'
       moderation_status:
         $ref: '#/definitions/types.ModerationStatus'
       objective:
-        type: string
+        $ref: '#/definitions/types.Translations'
       reason_of_reject:
         type: string
       rejected_applicants:
@@ -79,38 +105,41 @@ definitions:
           type: string
         type: array
       title:
-        type: string
+        $ref: '#/definitions/types.Translations'
       views:
         type: integer
       who_is_needed:
-        type: string
+        $ref: '#/definitions/types.Translations'
     required:
     - author
-    - description
-    - objective
     - tags
-    - title
-    - who_is_needed
     type: object
   types.Research:
     properties:
       _id:
         type: string
-      description:
+      author:
         type: string
+      description:
+        $ref: '#/definitions/types.Translations'
       link:
+        type: string
+      moderation_status:
+        $ref: '#/definitions/types.ModerationStatus'
+      reason_of_reject:
+        type: string
+      slug:
         type: string
       tags:
         items:
           type: string
         type: array
       title:
-        type: string
+        $ref: '#/definitions/types.Translations'
     required:
-    - description
+    - author
     - link
     - tags
-    - title
     type: object
   types.Statistic:
     properties:
@@ -129,11 +158,19 @@ definitions:
     - year
     - year_delta
     type: object
+  types.Suggestions:
+    properties:
+      suggestions:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+    type: object
   types.Tag:
     properties:
       _id:
         type: string
-      translations:
+      title:
         $ref: '#/definitions/types.Translations'
     type: object
   types.Translations:
@@ -156,6 +193,15 @@ paths:
       consumes:
       - application/json
       description: Retrieves all events
+      parameters:
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -234,38 +280,6 @@ paths:
       summary: Delete event by ID
       tags:
       - events
-    get:
-      consumes:
-      - application/json
-      description: Retrieves a event by its ID
-      parameters:
-      - description: Event ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.Event'
-        "400":
-          description: Invalid ID
-          schema:
-            type: string
-        "404":
-          description: Event not found
-          schema:
-            type: string
-        "500":
-          description: Internal Server Error
-          schema:
-            type: string
-      summary: Get event by ID
-      tags:
-      - events
     put:
       consumes:
       - application/json
@@ -300,11 +314,244 @@ paths:
       summary: Update event by ID
       tags:
       - events
+  /v1/events/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a event by its slug
+      parameters:
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Event'
+        "400":
+          description: Invalid slug
+          schema:
+            type: string
+        "404":
+          description: Event not found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get event by slug
+      tags:
+      - events
+  /v1/locations:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all locations
+      parameters:
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.Location'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get all locations
+      tags:
+      - locations
+    post:
+      consumes:
+      - application/json
+      description: Creates a new research
+      parameters:
+      - description: Location Object
+        in: body
+        name: research
+        required: true
+        schema:
+          $ref: '#/definitions/types.Location'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/types.Location'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create research
+      tags:
+      - locations
+  /v1/locations/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a research document by its ID
+      parameters:
+      - description: Location ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Location deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid ID
+          schema:
+            type: string
+        "404":
+          description: Location not found
+          schema:
+            type: string
+        "500":
+          description: 'Error deleting research: <error message>'
+          schema:
+            type: string
+      summary: Delete research by ID
+      tags:
+      - locations
+    put:
+      consumes:
+      - application/json
+      description: Updates a research by its ID
+      parameters:
+      - description: Location ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Location Object
+        in: body
+        name: research
+        required: true
+        schema:
+          $ref: '#/definitions/types.Location'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Location'
+        "400":
+          description: Invalid ID or Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update research by ID
+      tags:
+      - locations
+  /v1/locations/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a research by its slug
+      parameters:
+      - description: Location slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Location'
+        "400":
+          description: Invalid slug
+          schema:
+            type: string
+        "404":
+          description: Location not found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get research by slug
+      tags:
+      - locations
+  /v1/locations/suggestions:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of suggested addresses based on a query string.
+      parameters:
+      - description: Query string for location suggestions
+        in: query
+        name: q
+        type: string
+      - description: Language of response
+        in: query
+        name: lanquage
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Suggestions'
+        "400":
+          description: Invalid request parameters.
+          schema:
+            type: string
+        "500":
+          description: Internal server error.
+          schema:
+            type: string
+      summary: Get Location Suggestions
+      tags:
+      - locations
   /v1/projects:
     get:
       consumes:
       - application/json
       description: Retrieves a list of all projects in the database.
+      parameters:
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -383,38 +630,6 @@ paths:
       summary: Delete a project
       tags:
       - projects
-    get:
-      consumes:
-      - application/json
-      description: Retrieves a project by its ID and increments its view count.
-      parameters:
-      - description: Project ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.Project'
-        "400":
-          description: Invalid ID
-          schema:
-            type: string
-        "404":
-          description: Project not found
-          schema:
-            type: string
-        "500":
-          description: Internal Server Error
-          schema:
-            type: string
-      summary: Get a project by ID
-      tags:
-      - projects
     put:
       consumes:
       - application/json
@@ -447,11 +662,53 @@ paths:
       summary: Update a project
       tags:
       - projects
+  /v1/projects/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a project by its slug and increments its view count.
+      parameters:
+      - description: Project slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Project'
+        "400":
+          description: Invalid slug
+          schema:
+            type: string
+        "404":
+          description: Project not found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get a project by slug
+      tags:
+      - projects
   /v1/researches:
     get:
       consumes:
       - application/json
       description: Retrieves all researches
+      parameters:
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -530,38 +787,6 @@ paths:
       summary: Delete research by ID
       tags:
       - researches
-    get:
-      consumes:
-      - application/json
-      description: Retrieves a research by its ID
-      parameters:
-      - description: Research ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.Research'
-        "400":
-          description: Invalid ID
-          schema:
-            type: string
-        "404":
-          description: Research not found
-          schema:
-            type: string
-        "500":
-          description: Internal Server Error
-          schema:
-            type: string
-      summary: Get research by ID
-      tags:
-      - researches
     put:
       consumes:
       - application/json
@@ -596,11 +821,53 @@ paths:
       summary: Update research by ID
       tags:
       - researches
+  /v1/researches/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a research by its slug
+      parameters:
+      - description: Research slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Research'
+        "400":
+          description: Invalid slug
+          schema:
+            type: string
+        "404":
+          description: Research not found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get research by slug
+      tags:
+      - researches
   /v1/statistics:
     get:
       consumes:
       - application/json
       description: Retrieves all statistics
+      parameters:
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -750,6 +1017,15 @@ paths:
       consumes:
       - application/json
       description: Retrieves a list of all tags in the database
+      parameters:
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
