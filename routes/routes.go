@@ -1,6 +1,12 @@
 package routes
 
 import (
+	"henar-backend/events"
+	"henar-backend/locations"
+	"henar-backend/projects"
+	"henar-backend/researches"
+	"henar-backend/statistics"
+	"henar-backend/tags"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -18,52 +24,59 @@ func Setup(app *fiber.App) {
 		CookieHTTPOnly: true,
 		Expiration:     time.Hour * 3000,
 	})
-	// router.Use(BaseMiddleware, cors.New(cors.Config{
-	// 	AllowCredentials: true,
-	// 	AllowOrigins:     "*",
-	// 	AllowHeaders:     "Access-Control-Allow-Origin, Content-Type, Authorization, Origin, Accept",
-	// }))
-
-	// noAuth := router.Group("")
 
 	app.Post("/auth/signup", SignUp)
 	app.Post("/auth/signin", SignIn)
 	app.Get("/auth/signout", SignOut)
 	app.Get("/auth/check", Check)
 
+	locationsGroup := app.Group("/v1/locations")
+	locationsGroup.Get("", locations.GetLocations)
+	locationsGroup.Get("/suggestions", locations.GetLocationSuggestions)
+	locationsGroup.Get("/:id", locations.GetLocation)
+	locationsGroup.Post("", locations.CreateLocation)
+	locationsGroup.Patch("/:id", locations.UpdateLocation)
+	locationsGroup.Delete("/:id", locations.DeleteLocation)
+
+	// Events routes
+	eventsGroup := app.Group("/v1/events")
+	eventsGroup.Get("", events.GetEvents)
+	eventsGroup.Get("/:slug", events.GetEvent)
+	eventsGroup.Post("", events.CreateEvent)
+	eventsGroup.Patch("/:id", events.UpdateEvent)
+	eventsGroup.Delete("/:id", events.DeleteEvent)
+
+	// Statistics routes
+	statisticsGroup := app.Group("/v1/statistics")
+	statisticsGroup.Get("", statistics.GetStatistics)
+	statisticsGroup.Get("/:id", statistics.GetStatistic)
+	statisticsGroup.Post("", statistics.CreateStatistic)
+	statisticsGroup.Patch("/:id", statistics.UpdateStatistic)
+	statisticsGroup.Delete("/:id", statistics.DeleteStatistic)
+
+	// Tags routes
+	tagsGroup := app.Group("/v1/tags")
+	tagsGroup.Get("", tags.GetTags)
+	tagsGroup.Get("/:id", tags.GetTag)
+	tagsGroup.Post("", tags.CreateTag)
+	tagsGroup.Patch("/:id", tags.UpdateTag)
+	tagsGroup.Delete("/:id", tags.DeleteTag)
+
+	// Projects routes
+	projectsGroup := app.Group("/v1/projects")
+	projectsGroup.Get("", projects.GetProjects)
+	projectsGroup.Get("/:slug", projects.GetProject)
+	projectsGroup.Post("", projects.CreateProject)
+	projectsGroup.Patch("/:id", projects.UpdateProject)
+	projectsGroup.Delete("/:id", projects.DeleteProject)
+
+	// Researches routes
+	researchesGroup := app.Group("/v1/researches")
+	researchesGroup.Get("", researches.GetResearches)
+	researchesGroup.Get("/:slug", researches.GetResearch)
+	researchesGroup.Post("", researches.CreateResearch)
+	researchesGroup.Patch("/:id", researches.UpdateResearch)
+	researchesGroup.Delete("/:id", researches.DeleteResearch)
+
 	app.Listen(":8080")
-	// noAuth.Post("/auth/check", auth.Check)
-	// router := mux.NewRouter()
-	// router.Use(utils.RouterLoggerMiddleware)
-
-	// corsHandler := cors.Default().Handler(router)
-
-	// apiRouter := router.PathPrefix("/api").Subrouter()
-
-	// noAuth := apiRouter.PathPrefix("").Subrouter()
-	// {
-	// 	noAuth.HandleFunc(("/auth/signup"), users.CreateUser).Methods("POST")
-	// 	noAuth.HandleFunc("/auth/login", auth.LoginHandler).Methods("POST")
-	// 	noAuth.HandleFunc("/auth/logout", auth.LogoutHandler).Methods("GET")
-	// 	// noAuth.HandleFunc("/auth/check", auth.CheckAuthHandler).Methods("GET")
-	// 	noAuth.HandleFunc("/projects/{projectId}", projects.GetProject).Methods("GET")
-	// 	noAuth.HandleFunc("/projects", projects.GetProjects).Methods("GET")
-	// }
-
-	// sessionAuth := apiRouter.PathPrefix("").Subrouter()
-	// sessionAuth.Use(auth.SessionMiddleware)
-	// {
-	// 	sessionAuth.HandleFunc("/users/{userId}", users.GetUser).Methods("GET")
-	// 	sessionAuth.HandleFunc("/projects", projects.CreateProject).Methods("POST")
-	// 	sessionAuth.HandleFunc("/projects/{projectId}", projects.UpdateProject).Methods("PATCH")
-	// 	sessionAuth.HandleFunc("/projects/{projectId}", projects.DeleteProject).Methods("DELETE")
-	// }
-
-	// adminAuth := sessionAuth.PathPrefix("").Subrouter()
-	// adminAuth.Use(auth.AdminMiddleware)
-	// {
-
-	// }
-
-	// http.ListenAndServe(":8080", corsHandler)
 }
