@@ -8,6 +8,7 @@ require (
 	github.com/gosimple/slug v1.13.1
 	github.com/swaggo/swag v1.8.12
 	go.mongodb.org/mongo-driver v1.11.2
+	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	gopkg.in/go-playground/validator.v9 v9.31.0
 )
 

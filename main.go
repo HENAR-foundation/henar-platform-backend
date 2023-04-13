@@ -2,12 +2,8 @@ package main
 
 import (
 	"henar-backend/db"
-	"henar-backend/events"
-	"henar-backend/locations"
-	"henar-backend/projects"
-	"henar-backend/researches"
-	"henar-backend/statistics"
-	"henar-backend/tags"
+	"henar-backend/routes"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -24,62 +20,19 @@ import (
 func main() {
 	db.InitDb()
 
+	log.Println("gsrg")
 	app := fiber.New()
 
 	app.Use(logger.New())
 
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
-	// Locations routes
-	locationsGroup := app.Group("/v1/locations")
-	locationsGroup.Get("", locations.GetLocations)
-	locationsGroup.Get("/suggestions", locations.GetLocationSuggestions)
-	locationsGroup.Get("/:id", locations.GetLocation)
-	locationsGroup.Post("", locations.CreateLocation)
-	locationsGroup.Patch("/:id", locations.UpdateLocation)
-	locationsGroup.Delete("/:id", locations.DeleteLocation)
+	app.Use(cors.New(cors.Config{
+		AllowHeaders:     "Origin,Content-Type,Accept,Content-Length,Accept-Language,Accept-Encoding,Connection,Access-Control-Allow-Origin,Access-Control-Allow-Credectials",
+		AllowOrigins:     string("http://localhost:3000"),
+		AllowCredentials: true,
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
+	}))
 
-	// Events routes
-	eventsGroup := app.Group("/v1/events")
-	eventsGroup.Get("", events.GetEvents)
-	eventsGroup.Get("/:slug", events.GetEvent)
-	eventsGroup.Post("", events.CreateEvent)
-	eventsGroup.Patch("/:id", events.UpdateEvent)
-	eventsGroup.Delete("/:id", events.DeleteEvent)
-
-	// Statistics routes
-	statisticsGroup := app.Group("/v1/statistics")
-	statisticsGroup.Get("", statistics.GetStatistics)
-	statisticsGroup.Get("/:id", statistics.GetStatistic)
-	statisticsGroup.Post("", statistics.CreateStatistic)
-	statisticsGroup.Patch("/:id", statistics.UpdateStatistic)
-	statisticsGroup.Delete("/:id", statistics.DeleteStatistic)
-
-	// Tags routes
-	tagsGroup := app.Group("/v1/tags")
-	tagsGroup.Get("", tags.GetTags)
-	tagsGroup.Get("/:id", tags.GetTag)
-	tagsGroup.Post("", tags.CreateTag)
-	tagsGroup.Patch("/:id", tags.UpdateTag)
-	tagsGroup.Delete("/:id", tags.DeleteTag)
-
-	// Projects routes
-	projectsGroup := app.Group("/v1/projects")
-	projectsGroup.Get("", projects.GetProjects)
-	projectsGroup.Get("/:slug", projects.GetProject)
-	projectsGroup.Post("", projects.CreateProject)
-	projectsGroup.Patch("/:id", projects.UpdateProject)
-	projectsGroup.Delete("/:id", projects.DeleteProject)
-
-	// Researches routes
-	researchesGroup := app.Group("/v1/researches")
-	researchesGroup.Get("", researches.GetResearches)
-	researchesGroup.Get("/:slug", researches.GetResearch)
-	researchesGroup.Post("", researches.CreateResearch)
-	researchesGroup.Patch("/:id", researches.UpdateResearch)
-	researchesGroup.Delete("/:id", researches.DeleteResearch)
-
-	app.Use(cors.New())
-
-	app.Listen(":8080")
+	routes.Setup(app)
 }
