@@ -3,6 +3,7 @@ package researches
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"henar-backend/db"
 	"henar-backend/types"
 	"henar-backend/utils"
@@ -25,15 +26,29 @@ import (
 // @Router /v1/researches [get]
 // @Param limit query int false "Limit"
 // @Param offset query int false "Offset"
+// @Param sort query string false "Comma-separated list of sort fields and directions, e.g. views,-applicants,tags"
+// @Param language query string false "Language code for the title (default 'en')"
+// @Param title query string false "Substring to match in the title"
+// @Param tags query string false "Comma-separated list of tag IDs to filter by"
+// @Param location query string false "Location ID to filter by"
 func GetResearches(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("researches")
 
-	filter := bson.M{}
-
-	// Get the pagination options for the query
+	// Get the filter and options for the query
 	findOptions, err := utils.GetPaginationOptions(c)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
+	}
+
+	filter, err := utils.GetFilter(c)
+	if err != nil {
+		errMsg := fmt.Sprintf("Error getting projects filter: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString(errMsg)
+	}
+
+	sort := utils.GetSort(c)
+	if len(sort) != 0 {
+		findOptions.SetSort(sort)
 	}
 
 	// Query the database and get the cursor
