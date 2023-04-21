@@ -202,6 +202,26 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Comma-separated list of sort fields and directions, e.g. views,-applicants,tags
+        in: query
+        name: sort
+        type: string
+      - description: Language code for the title (default 'en')
+        in: query
+        name: language
+        type: string
+      - description: Substring to match in the title
+        in: query
+        name: title
+        type: string
+      - description: Comma-separated list of tag IDs to filter by
+        in: query
+        name: tags
+        type: string
+      - description: Location ID to filter by
+        in: query
+        name: location
+        type: string
       produces:
       - application/json
       responses:
@@ -552,6 +572,26 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Comma-separated list of sort fields and directions, e.g. views,-applicants,tags
+        in: query
+        name: sort
+        type: string
+      - description: Language code for the title (default 'en')
+        in: query
+        name: language
+        type: string
+      - description: Substring to match in the title
+        in: query
+        name: title
+        type: string
+      - description: Comma-separated list of tag IDs to filter by
+        in: query
+        name: tags
+        type: string
+      - description: Location ID to filter by
+        in: query
+        name: location
+        type: string
       produces:
       - application/json
       responses:
@@ -709,6 +749,26 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Comma-separated list of sort fields and directions, e.g. views,-applicants,tags
+        in: query
+        name: sort
+        type: string
+      - description: Language code for the title (default 'en')
+        in: query
+        name: language
+        type: string
+      - description: Substring to match in the title
+        in: query
+        name: title
+        type: string
+      - description: Comma-separated list of tag IDs to filter by
+        in: query
+        name: tags
+        type: string
+      - description: Location ID to filter by
+        in: query
+        name: location
+        type: string
       produces:
       - application/json
       responses:

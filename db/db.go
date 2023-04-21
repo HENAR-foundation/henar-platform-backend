@@ -30,11 +30,31 @@ func GetCollection(collection string) (*mongo.Collection, error) {
 }
 
 func createIndex(collection *mongo.Collection) {
-	indexModel := mongo.IndexModel{
-		Keys:    bson.M{"slug": 1},
-		Options: options.Index().SetUnique(true),
+	indexModel := []mongo.IndexModel{
+		{
+			Keys: bson.M{
+				"slug": 1,
+			},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys: bson.M{
+				"tags": 1,
+			},
+		},
+		{
+			Keys: bson.M{
+				"title": 1,
+			},
+		},
+		{
+			Keys: bson.M{
+				"location": 1,
+			},
+		},
 	}
-	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
+
+	indexName, err := collection.Indexes().CreateMany(context.Background(), indexModel)
 	if err != nil {
 		log.Fatal(err)
 	}
