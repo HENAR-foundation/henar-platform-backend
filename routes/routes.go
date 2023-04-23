@@ -30,65 +30,64 @@ func Setup(app *fiber.App) {
 	app.Get("/auth/signout", SignOut)
 	app.Get("/auth/check", Check)
 
-	withAuth := app.Group("")
-	withAuth.Use(SessionMiddleware)
-
+	// Locations routes
 	locationsGroup := app.Group("/v1/locations")
-	locationsGroupSecured := app.Group("/v1/locations")
-
 	locationsGroup.Get("", locations.GetLocations)
 	locationsGroup.Get("/suggestions", locations.GetLocationSuggestions)
 	locationsGroup.Get("/:id", locations.GetLocation)
+
+	locationsGroupSecured := app.Group("/v1/locations", SessionMiddleware)
 	locationsGroupSecured.Post("", locations.CreateLocation)
 	locationsGroupSecured.Patch("/:id", locations.UpdateLocation)
 	locationsGroupSecured.Delete("/:id", locations.DeleteLocation)
 
 	// Events routes
 	eventsGroup := app.Group("/v1/events")
-	eventsGroupSecured := app.Group("/v1/events")
-
 	eventsGroup.Get("", events.GetEvents)
 	eventsGroup.Get("/:slug", events.GetEvent)
+
+	eventsGroupSecured := app.Group("/v1/events", SessionMiddleware)
 	eventsGroupSecured.Post("", events.CreateEvent)
 	eventsGroupSecured.Patch("/:id", events.UpdateEvent)
 	eventsGroupSecured.Delete("/:id", events.DeleteEvent)
 
 	// Statistics routes
 	statisticsGroup := app.Group("/v1/statistics")
-	statisticsGroupSecured := app.Group("/v1/statistics")
-
 	statisticsGroup.Get("", statistics.GetStatistics)
 	statisticsGroup.Get("/:id", statistics.GetStatistic)
+
+	statisticsGroupSecured := app.Group("/v1/statistics", SessionMiddleware)
 	statisticsGroupSecured.Post("", statistics.CreateStatistic)
 	statisticsGroupSecured.Patch("/:id", statistics.UpdateStatistic)
 	statisticsGroupSecured.Delete("/:id", statistics.DeleteStatistic)
 
 	// Tags routes
 	tagsGroup := app.Group("/v1/tags")
-	tagsGroupSecured := app.Group("/v1/tags")
-
 	tagsGroup.Get("", tags.GetTags)
 	tagsGroup.Get("/:id", tags.GetTag)
+
+	tagsGroupSecured := app.Group("/v1/tags", SessionMiddleware)
 	tagsGroupSecured.Post("", tags.CreateTag)
 	tagsGroupSecured.Patch("/:id", tags.UpdateTag)
 	tagsGroupSecured.Delete("/:id", tags.DeleteTag)
 
 	// Projects routes
 	projectsGroup := app.Group("/v1/projects")
-	projectsGroupSecured := app.Group("/v1/projects")
-
 	projectsGroup.Get("", projects.GetProjects)
 	projectsGroup.Get("/:slug", projects.GetProject)
+
+	projectsGroupSecured := app.Group("/v1/projects", SessionMiddleware)
+	projectsGroupSecured.Get("/respond/:id", projects.RespondToProject(store))
 	projectsGroupSecured.Post("", projects.CreateProject)
 	projectsGroupSecured.Patch("/:id", projects.UpdateProject)
 	projectsGroupSecured.Delete("/:id", projects.DeleteProject)
 
 	// Researches routes
 	researchesGroup := app.Group("/v1/researches")
-	researchesGroupSecured := app.Group("/v1/researches")
-
 	researchesGroup.Get("", researches.GetResearches)
 	researchesGroup.Get("/:slug", researches.GetResearch)
+
+	researchesGroupSecured := app.Group("/v1/researches", SessionMiddleware)
 	researchesGroupSecured.Post("", researches.CreateResearch)
 	researchesGroupSecured.Patch("/:id", researches.UpdateResearch)
 	researchesGroupSecured.Delete("/:id", researches.DeleteResearch)

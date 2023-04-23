@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"henar-backend/types"
 	"henar-backend/users"
 
@@ -11,6 +12,7 @@ func SignUp(c *fiber.Ctx) error {
 	var user types.UserCredentialsWithoutId
 
 	err := c.BodyParser(&user)
+	fmt.Println(user)
 	if err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
 			"message": "kind an error in parse: " + err.Error(),
@@ -33,7 +35,6 @@ func SignIn(c *fiber.Ctx) error {
 	var data types.UserCredentialsWithoutId
 
 	err := c.BodyParser(&data)
-
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "kind an error: " + err.Error(),
@@ -62,6 +63,9 @@ func SignIn(c *fiber.Ctx) error {
 
 	sess.Set(AUTH_KEY, true)
 	sess.Set(USER_ID, user.Id)
+	// fmt.Println("user id", user.Id)
+	// uuu := sess.Get("user_id")
+	// fmt.Println("uuu", uuu)
 
 	sessErr = sess.Save()
 	if sessErr != nil {
