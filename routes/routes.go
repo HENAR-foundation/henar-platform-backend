@@ -25,10 +25,11 @@ func Setup(app *fiber.App) {
 		Expiration:     time.Hour * 3000,
 	})
 
-	app.Post("/auth/signup", SignUp)
-	app.Post("/auth/signin", SignIn)
-	app.Get("/auth/signout", SignOut)
-	app.Get("/auth/check", Check)
+	authGroup := app.Group("/v1/auth")
+	authGroup.Post("/signup", SignUp)
+	authGroup.Post("/signin", SignIn)
+	authGroup.Get("/signout", SignOut)
+	authGroup.Get("/check", Check)
 
 	// Locations routes
 	locationsGroup := app.Group("/v1/locations")
