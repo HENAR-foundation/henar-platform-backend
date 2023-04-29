@@ -1,25 +1,27 @@
 package routes
 
 import (
-	"fmt"
+	"context"
+	"henar-backend/db"
 	"henar-backend/types"
 	"henar-backend/users"
 
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func SignUp(c *fiber.Ctx) error {
-	var user types.UserCredentialsWithoutId
+	var user types.UserCredentials
 
 	err := c.BodyParser(&user)
-	fmt.Println(user)
 	if err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
 			"message": "kind an error in parse: " + err.Error(),
 		})
 	}
 
-	err = users.CreateUser(user)
+	err = users.CreateUser(c)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "kind an error in create user: " + err.Error(),
@@ -32,25 +34,30 @@ func SignUp(c *fiber.Ctx) error {
 }
 
 func SignIn(c *fiber.Ctx) error {
-	var data types.UserCredentialsWithoutId
+	var uc types.UserCredentials
 
-	err := c.BodyParser(&data)
+	err := c.BodyParser(&uc)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "kind an error: " + err.Error(),
 		})
 	}
 
-	ok, user := users.CheckEmail(data.Email)
-	if !ok {
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{"email": uc.Email}
+	var user types.User
+	err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "user not found",
+			"message": "wrong credentials",
 		})
 	}
 
-	if data.Password != user.Password {
+	// Comparing the password with the hash
+	err = bcrypt.CompareHashAndPassword(user.HashedPassword, []byte(uc.Password))
+	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "incorrect password",
+			"message": "wrong credentials",
 		})
 	}
 
@@ -62,10 +69,7 @@ func SignIn(c *fiber.Ctx) error {
 	}
 
 	sess.Set(AUTH_KEY, true)
-	sess.Set(USER_ID, user.Id)
-	// fmt.Println("user id", user.Id)
-	// uuu := sess.Get("user_id")
-	// fmt.Println("uuu", uuu)
+	sess.Set(USER_ID, user.ID.Hex())
 
 	sessErr = sess.Save()
 	if sessErr != nil {

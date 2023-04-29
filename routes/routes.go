@@ -7,6 +7,7 @@ import (
 	"henar-backend/researches"
 	"henar-backend/statistics"
 	"henar-backend/tags"
+	"henar-backend/users"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -91,6 +92,16 @@ func Setup(app *fiber.App) {
 	researchesGroupSecured.Post("", researches.CreateResearch)
 	researchesGroupSecured.Patch("/:id", researches.UpdateResearch)
 	researchesGroupSecured.Delete("/:id", researches.DeleteResearch)
+
+	// User routes
+	usersGroup := app.Group("/v1/users")
+	usersGroup.Get("", users.GetUsers)
+	usersGroup.Get("/:id", users.GetUser)
+
+	// usersGroupSecured := app.Group("/v1/users", SessionMiddleware)
+	usersGroup.Post("", users.CreateUser)
+	usersGroup.Patch("/:id", users.UpdateUser)
+	usersGroup.Delete("/:id", users.DeleteUser)
 
 	app.Listen(":8080")
 }
