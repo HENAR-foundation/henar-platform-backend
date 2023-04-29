@@ -6,53 +6,70 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type Role int
+type Role string
 
 const (
-	Admin Role = iota
-	Specialist
+	Admin      Role = "admin"
+	Specialist Role = "specialist"
 )
 
 type UserCredentials struct {
-	Id       int64  `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
-type UserCredentialsWithoutId struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
 type Contacts struct {
-	Emain     string `json:"emain"`
+	Email     string `json:"email"`
 	Phone     string `json:"phone"`
 	Facebook  string `json:"facebook"`
 	Instagram string `json:"instagram"`
 	Linkedin  string `json:"linkedin"`
 }
 
+type UserBody struct {
+	ID                        primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
+	Email                     string               `json:"email" validate:"required,email"`
+	Password                  string               `json:"password" validate:"required"`
+	Avatar                    string               `json:"avatar"`
+	FullName                  string               `json:"full_name"`
+	Description               string               `json:"description"`
+	Contacts                  []string             `json:"contacts"`
+	Location                  primitive.ObjectID   `json:"location"`
+	Role                      Role                 `json:"role"`
+	Job                       string               `json:"job"`
+	Tags                      []primitive.ObjectID `json:"tags"`
+	IncomingContactRequests   []primitive.ObjectID `json:"incoming_contact_requests,omitempty" bson:"incoming_contact_requests,omitempty"`
+	OutgoingContactRequests   []primitive.ObjectID `json:"outgoing_contact_requests,omitempty" bson:"outgoing_contact_requests,omitempty"`
+	ConfirmedContactsRequests []primitive.ObjectID `json:"confirmed_contacts_requests,omitempty" bson:"confirmed_contacts_requests,omitempty"`
+	BlockedUsers              []primitive.ObjectID `json:"blocked_users,omitempty" bson:"blocked_users,omitempty"`
+	ProjectsApplications      []primitive.ObjectID `json:"projects_applications,omitempty" bson:"projects_applications,omitempty"`
+	ConfirmedApplications     []primitive.ObjectID `json:"confirmed_applications,omitempty" bson:"confirmed_applications,omitempty"`
+	ProjectsHistory           []primitive.ObjectID `json:"projects_history,omitempty" bson:"projects_history,omitempty"`
+	CreatedProjects           []primitive.ObjectID `json:"created_projects,omitempty" bson:"created_projects,omitempty"`
+	Notifications             []primitive.ObjectID `json:"notification,omitempty" bson:"notification,omitempty"`
+}
+
 type User struct {
-	Id                        int64    `json:"id"`
-	CreatedAt                 string   `json:"created_at"`
-	Avatar                    string   `json:"avatar"`
-	FullName                  string   `json:"full_name"`
-	Description               string   `json:"description"`
-	Contacts                  []string `json:"contacts"`
-	Location                  int64    `json:"location"`
-	Email                     string   `json:"email"`
-	Password                  string   `json:"password"`
-	Role                      Role     `json:"role"`
-	Job                       string   `json:"job"`
-	Tags                      []int64  `json:"tags"`
-	IncomingContactRequests   []int64  `json:"incoming_contact_requests"`
-	OutgoingContactRequests   []int64  `json:"outgoing_contact_requests"`
-	ConfirmedContactsRequests []int64  `json:"confirmed_contacts_requests"`
-	BlockedUsers              []int64  `json:"blocked_users"`
-	ProjectsApplications      []int64  `json:"projects_applications"`
-	ConfirmedApplications     []int64  `json:"confirmed_applications"`
-	ProjectsHistory           []int64  `json:"projects_history"`
-	CreatedProjects           []int64  `json:"created_projects"`
-	Notifications             []int64  `json:"notification"`
+	ID                        primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
+	Email                     string               `json:"email" validate:"required,email"`
+	HashedPassword            []byte               `json:"-" validate:"required"`
+	Avatar                    string               `json:"avatar"`
+	FullName                  string               `json:"full_name" bson:"full_name"`
+	Description               string               `json:"description"`
+	Contacts                  []string             `json:"contacts"`
+	Location                  primitive.ObjectID   `json:"location"`
+	Role                      Role                 `json:"role"`
+	Job                       string               `json:"job"`
+	Tags                      []primitive.ObjectID `json:"tags"`
+	IncomingContactRequests   []primitive.ObjectID `json:"incoming_contact_requests,omitempty" bson:"incoming_contact_requests,omitempty"`
+	OutgoingContactRequests   []primitive.ObjectID `json:"outgoing_contact_requests,omitempty" bson:"outgoing_contact_requests,omitempty"`
+	ConfirmedContactsRequests []primitive.ObjectID `json:"confirmed_contacts_requests,omitempty" bson:"confirmed_contacts_requests,omitempty"`
+	BlockedUsers              []primitive.ObjectID `json:"blocked_users,omitempty" bson:"blocked_users,omitempty"`
+	ProjectsApplications      []primitive.ObjectID `json:"projects_applications,omitempty" bson:"projects_applications,omitempty"`
+	ConfirmedApplications     []primitive.ObjectID `json:"confirmed_applications,omitempty" bson:"confirmed_applications,omitempty"`
+	ProjectsHistory           []primitive.ObjectID `json:"projects_history,omitempty" bson:"projects_history,omitempty"`
+	CreatedProjects           []primitive.ObjectID `json:"created_projects,omitempty" bson:"created_projects,omitempty"`
+	Notifications             []primitive.ObjectID `json:"notification,omitempty" bson:"notification,omitempty"`
 }
 
 type NotificationStatus int

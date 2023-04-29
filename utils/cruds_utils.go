@@ -50,6 +50,16 @@ func GetFilter(c *fiber.Ctx) (bson.M, error) {
 		filter["title."+language] = primitive.Regex{Pattern: title, Options: "i"}
 	}
 
+	name := c.Query("name")
+	if name != "" {
+		filter["full_name"] = primitive.Regex{Pattern: name, Options: "i"}
+	}
+
+	job := c.Query("job")
+	if job != "" {
+		filter["job"] = primitive.Regex{Pattern: job, Options: "i"}
+	}
+
 	tags := c.Query("tags")
 	if tags != "" {
 		tagIDs := strings.Split(tags, ",")
