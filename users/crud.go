@@ -16,6 +16,15 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
+// @Summary Create a new user
+// @Description Creates a new user in the database
+// @Tags users
+// @Accept json
+// @Produce json
+// @Success 201 {object} types.User "The created user"
+// @Failure 400 {string} string "Bad request"
+// @Failure 500 {string} string "Internal server error"
+// @Router /users [post]
 func CreateUser(c *fiber.Ctx) error {
 	// Parse request body into user struct
 	var uc types.UserCredentials
@@ -73,6 +82,18 @@ func CreateUser(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(createdUser)
 }
 
+// @Summary Update an existing user
+// @Description Updates an existing user in the database
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param user body types.UserBody true "User details"
+// @Success 200 {object} types.User
+// @Failure 400 {string} string "Bad request"
+// @Failure 404 {string} string "User not found"
+// @Failure 500 {string} string "Internal server error"
+// @Router /users/{id} [patch]
 func UpdateUser(c *fiber.Ctx) error {
 	// Parse request body into user struct
 	var userBody types.UserBody
@@ -148,7 +169,17 @@ func UpdateUser(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(updatedUser)
 }
 
-// GetUser retrieves a single user by ID
+// @Summary Get user by id
+// @Description Retrieves a user by its id
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User "
+// @Success 200 {object} types.User
+// @Failure 400 {string} string "Invalid id"
+// @Failure 404 {string} string "User not found"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/users/{id} [get]
 func GetUser(c *fiber.Ctx) error {
 	// Parse the user ID from the request parameters
 	id := c.Params("id")
@@ -172,7 +203,22 @@ func GetUser(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(user)
 }
 
-// GetUsers retrieves a list of users with optional pagination and filtering
+// @Summary Get all users
+// @Description Retrieves all users
+// @Tags users
+// @Accept json
+// @Produce json
+// @Success 200 {array} types.User
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /v1/users [get]
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Param sort query string false "Comma-separated list of sort fields and directions, e.g. tags"
+// @Param language query string false "Language code for the title (default 'en')"
+// @Param full_name query string false "Substring to match in the full name"
+// @Param job query string false "Substring to match in the job"
+// @Param tags query string false "Comma-separated list of tag IDs to filter by"
+// @Param location query string false "Location ID to filter by"
 func GetUsers(c *fiber.Ctx) error {
 	// Get the filter and options for the query
 	findOptions, err := utils.GetPaginationOptions(c)
@@ -190,13 +236,6 @@ func GetUsers(c *fiber.Ctx) error {
 	if len(sort) != 0 {
 		findOptions.SetSort(sort)
 	}
-
-	// Build the MongoDB query filter based on the name parameter
-	// filter := bson.M{}
-	// options := bson.D{}
-	// if name != "" {
-	// 	filter["name"] = bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}
-	// }
 
 	// Retrieve the list of users from MongoDB
 	collection, _ := db.GetCollection("users")
@@ -219,6 +258,17 @@ func GetUsers(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(users)
 }
 
+// @Summary Delete user by ID
+// @Description Deletes a user document by its ID
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {string} string "User deleted successfully"
+// @Failure 400 {string} string "Invalid ID"
+// @Failure 404 {string} string "User not found"
+// @Failure 500 {string} string "Error deleting user: <error message>"
+// @Router /v1/users/{id} [delete]
 func DeleteUser(c *fiber.Ctx) error {
 	// Get the ID of the user to delete
 	userId := c.Params("id")

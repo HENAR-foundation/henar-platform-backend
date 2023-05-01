@@ -180,7 +180,7 @@ func CreateResearch(c *fiber.Ctx) error {
 // @Success 200 {object} types.Research
 // @Failure 400 {string} string "Invalid ID or Bad Request"
 // @Failure 500 {string} string "Internal Server Error"
-// @Router /v1/researches/{id} [put]
+// @Router /v1/researches/{id} [patch]
 func UpdateResearch(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("researches")
 
