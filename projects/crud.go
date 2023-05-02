@@ -198,7 +198,7 @@ func CreateProject(c *fiber.Ctx) error {
 // @Success 204 "No content"
 // @Failure 400 {string} string "Invalid ID or error parsing request body"
 // @Failure 500 {string} string "Internal Server Error"
-// @Router /v1/projects/{id} [put]
+// @Router /v1/projects/{id} [patch]
 func UpdateProject(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 

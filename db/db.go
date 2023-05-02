@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,7 +13,8 @@ import (
 var client *mongo.Client
 
 func GetClientOptions() *options.ClientOptions {
-	dburi := "mongodb+srv://doadmin:g3k615i2p89A7IwD@henar-db-0d7d8f8e.mongo.ondigitalocean.com/?retryWrites=true&w=majority"
+	dburi := "mongodb+srv://doadmin:Y6krY4thlZAM7jeP@cluster0.fz184bf.mongodb.net/test"
+	// dburi := "mongodb+srv://doadmin:g3k615i2p89A7IwD@henar-db-0d7d8f8e.mongo.ondigitalocean.com/?retryWrites=true&w=majority"
 
 	serverAPIOptions := options.ServerAPI(options.ServerAPIVersion1)
 	clientOptions := options.Client().
@@ -25,39 +27,27 @@ func GetClientOptions() *options.ClientOptions {
 func GetCollection(collection string) (*mongo.Collection, error) {
 	client := GetMongoClient()
 
-	return client.Database("henar").Collection(collection), nil
+	return client.Database("test").Collection(collection), nil
 }
 
-func createIndex(collection *mongo.Collection) {
-	indexModel := []mongo.IndexModel{
-		{
-			Keys: bson.M{
-				"slug": 1,
-			},
-			Options: options.Index().SetUnique(true),
-		},
-		{
-			Keys: bson.M{
-				"tags": 1,
-			},
-		},
-		{
-			Keys: bson.M{
-				"title": 1,
-			},
-		},
-		{
-			Keys: bson.M{
-				"location": 1,
-			},
-		},
-	}
+type Index struct {
+	Keys    string
+	Options *options.IndexOptions
+}
 
-	indexName, err := collection.Indexes().CreateMany(context.Background(), indexModel)
-	if err != nil {
-		log.Fatal(err)
+type Indexes []Index
+
+func createIndex(coll *mongo.Collection, indexes Indexes) {
+	for _, idx := range indexes {
+		indexName, err := coll.Indexes().CreateOne(context.TODO(), mongo.IndexModel{
+			Keys:    bson.M{idx.Keys: 1},
+			Options: idx.Options,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(indexName)
 	}
-	log.Printf("Created index %s on collection %s", indexName, collection.Name())
 }
 
 func InitDb() {
@@ -69,13 +59,40 @@ func InitDb() {
 	} else {
 		client = newClient
 
+		indexes := Indexes{
+			{
+				Keys:    "slug",
+				Options: options.Index().SetUnique(true),
+			},
+			{
+				Keys: "tags",
+			},
+			{
+				Keys: "title",
+			},
+
+			{
+				Keys: "location",
+			},
+		}
+		usersIndexes := Indexes{
+			{
+				Keys: "full_name",
+			},
+			{
+				Keys: "job",
+			},
+		}
+
 		// Add indexes
 		researches, _ := GetCollection("researches")
-		createIndex(researches)
+		createIndex(researches, indexes)
 		projects, _ := GetCollection("projects")
-		createIndex(projects)
+		createIndex(projects, indexes)
 		events, _ := GetCollection("events")
-		createIndex(events)
+		createIndex(events, indexes)
+		users, _ := GetCollection("users")
+		createIndex(users, usersIndexes)
 	}
 }
 

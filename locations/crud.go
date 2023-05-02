@@ -168,7 +168,7 @@ func CreateLocation(c *fiber.Ctx) error {
 // @Success 200 {object} types.Location
 // @Failure 400 {string} string "Invalid ID or Bad Request"
 // @Failure 500 {string} string "Internal Server Error"
-// @Router /v1/locations/{id} [put]
+// @Router /v1/locations/{id} [patch]
 func UpdateLocation(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("locations")
 
