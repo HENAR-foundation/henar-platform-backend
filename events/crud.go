@@ -180,7 +180,7 @@ func CreateEvent(c *fiber.Ctx) error {
 // @Success 200 {object} types.Event
 // @Failure 400 {string} string "Invalid ID or Bad Request"
 // @Failure 500 {string} string "Internal Server Error"
-// @Router /v1/events/{id} [put]
+// @Router /v1/events/{id} [patch]
 func UpdateEvent(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("events")
 

@@ -173,7 +173,7 @@ func CreateTag(c *fiber.Ctx) error {
 // @Success 200 {object} types.Tag "Updated tag object"
 // @Failure 400 {string} string "Invalid ID or error parsing request body or validation error"
 // @Failure 500 {string} string "Internal Server Error"
-// @Router /v1/tags/{id} [put]
+// @Router /v1/tags/{id} [patch]
 func UpdateTag(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("tags")
 
