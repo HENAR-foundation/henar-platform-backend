@@ -55,6 +55,7 @@ func SignIn(c *fiber.Ctx) error {
 
 	// Comparing the password with the hash
 	err = bcrypt.CompareHashAndPassword(user.HashedPassword, []byte(uc.Password))
+
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "wrong credentials",
