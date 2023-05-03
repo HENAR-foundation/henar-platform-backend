@@ -49,6 +49,9 @@ type UserBody struct {
 	Notifications             []primitive.ObjectID `json:"notification,omitempty" bson:"notification,omitempty"`
 }
 
+// TODO: concat User and UserBody
+// TODO: add Role by default on create user
+// TODO: return only specialist if user is not admin
 type User struct {
 	ID                        primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
 	Email                     string               `json:"email" validate:"required,email"`
@@ -118,22 +121,48 @@ const (
 	Rejected
 )
 
+type HowToHelpTheProject string
+
+const (
+	Financing HowToHelpTheProject = "financing"
+	Expertise HowToHelpTheProject = "expertise"
+	Resources HowToHelpTheProject = "resources"
+)
+
+type ProjectStatus string
+
+const (
+	Ideation             ProjectStatus = "Ideation"
+	Implementation       ProjectStatus = "Implementation"
+	LaunchAndExecution   ProjectStatus = "LaunchAndExecution"
+	PerfomanceAndControl ProjectStatus = "PerfomanceAndControl"
+	Closed               ProjectStatus = "Closed"
+)
+
+type CreatedBy struct {
+	ID       primitive.ObjectID
+	FullName string `json:"full_name" bson:"full_name"`
+	Job      string `json:"job"`
+}
+
 type Project struct {
-	ID                   primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
-	Slug                 string               `json:"slug"`
-	Covers               []string             `json:"covers,omitempty" bson:"covers,omitempty"`
-	Author               primitive.ObjectID   `json:"author" validate:"required" bson:"author"`
-	Title                Translations         `json:"title"`
-	Description          Translations         `json:"description"`
-	Objective            Translations         `json:"objective"`
-	WhoIsNeeded          Translations         `json:"who_is_needed"`
-	Tags                 []primitive.ObjectID `json:"tags" validate:"required" bson:"tags"`
-	Applicants           []primitive.ObjectID `json:"applicants,omitempty" bson:"applicants,omitempty"`
-	Views                int64                `json:"views" bson:"views"`
+	ID          primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
+	Slug        string               `json:"slug"`
+	Covers      []string             `json:"covers,omitempty" bson:"covers,omitempty"`
+	CreatedBy   CreatedBy            `json:"created_by" validate:"required" bson:"created_by"`
+	Title       Translations         `json:"title"`
+	Description Translations         `json:"description"`
+	Objective   Translations         `json:"objective"`
+	WhoIsNeeded Translations         `json:"who_is_needed"`
+	Tags        []primitive.ObjectID `json:"tags" validate:"required" bson:"tags"`
+	Applicants  []primitive.ObjectID `json:"applicants,omitempty" bson:"applicants,omitempty"`
+	Views       int64                `json:"views" bson:"views"`
+	// TODO: ModerationStatus and ReasonOfReject are available only for admin
 	ModerationStatus     ModerationStatus     `json:"moderation_status" bson:"moderation_status"`
 	ReasonOfReject       string               `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
 	SuccessfulApplicants []primitive.ObjectID `json:"successful_applicants,omitempty" bson:"successful_applicants,omitempty"`
-	RejectedApplicants   []primitive.ObjectID `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
+	// TODO: handler for reject applicant
+	RejectedApplicants []primitive.ObjectID `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
 }
 
 type Research struct {

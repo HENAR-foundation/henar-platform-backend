@@ -287,6 +287,8 @@ func DeleteProject(c *fiber.Ctx) error {
 // update projects applicants
 // handle errors
 // return response
+// TODO: add docs
+// TODO: add RejectApplicant
 func RespondToProject(store *session.Store) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		collection, err := db.GetCollection("projects")
