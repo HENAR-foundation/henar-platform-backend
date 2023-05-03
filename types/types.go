@@ -6,6 +6,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type Translations struct {
+	En string `bson:"en" json:"en" validate:"required_without_all=Ru Hy"`
+	Ru string `bson:"ru" json:"ru" validate:"required_without_all=En Hy"`
+	Hy string `bson:"hy" json:"hy" validate:"required_without_all=En Ru"`
+}
+
 type Role string
 
 const (
@@ -29,9 +35,9 @@ type Contacts struct {
 type UserBody struct {
 	ID                        primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
 	Email                     string               `json:"email" validate:"required,email"`
-	Password                  string               `json:"password" validate:"required"`
+	Password                  string               `json:"-" validate:"required"`
 	Avatar                    string               `json:"avatar"`
-	FullName                  string               `json:"full_name"`
+	FullName                  Translations         `json:"full_name"`
 	Description               string               `json:"description"`
 	Contacts                  []string             `json:"contacts"`
 	Location                  primitive.ObjectID   `json:"location"`
@@ -57,7 +63,7 @@ type User struct {
 	Email                     string               `json:"email" validate:"required,email"`
 	HashedPassword            []byte               `json:"-" validate:"required"`
 	Avatar                    string               `json:"avatar"`
-	FullName                  string               `json:"full_name" bson:"full_name"`
+	FullName                  Translations         `json:"full_name" bson:"full_name"`
 	Description               string               `json:"description"`
 	Contacts                  []string             `json:"contacts"`
 	Location                  primitive.ObjectID   `json:"location"`
@@ -204,10 +210,4 @@ type Suggestions struct {
 type Tag struct {
 	ID    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Title Translations       `json:"title"`
-}
-
-type Translations struct {
-	En string `bson:"en" json:"en" validate:"required_without_all=Ru Hy"`
-	Ru string `bson:"ru" json:"ru" validate:"required_without_all=En Hy"`
-	Hy string `bson:"hy" json:"hy" validate:"required_without_all=En Ru"`
 }
