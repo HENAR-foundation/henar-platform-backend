@@ -12,6 +12,7 @@ RUN CGO_ENABLED=0 go build -o ./app
 # second image from first one, but without preinstalled golang 
 FROM alpine:latest
 
+
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
