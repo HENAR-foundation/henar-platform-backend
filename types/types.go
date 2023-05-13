@@ -82,17 +82,20 @@ const (
 type NotificationType int
 
 const (
-	ProjectUpdate NotificationType = iota
-	ContactUpdate
+	ContactsRequested NotificationType = iota
+	ContactsRequestApproved
+	ProjectApproved
+	ProjetcDeclined
+	NewComment
 )
 
-// TODO: update notification struct
 type Notification struct {
 	id        int64              `json:"id"`
 	CreatedAt string             `json:"created_at"`
 	Status    NotificationStatus `json:"status"`
 	Type      NotificationType   `json:"type"`
 	Message   string             `json:"message"`
+	User      int64              `json:"userId"`
 }
 
 type Event struct {
