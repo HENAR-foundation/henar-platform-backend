@@ -59,6 +59,7 @@ type UserBody struct {
 
 // TODO: concat User and UserBody
 // TODO: add Role by default on create user
+// TODO: how to add required for other fields after registration?
 // TODO: return only specialist if user is not admin
 // TODO: add default language
 type User struct {
@@ -68,6 +69,7 @@ type User struct {
 	Avatar                    string               `json:"avatar"`
 	FullName                  Translations         `json:"full_name" bson:"full_name"`
 	Description               string               `json:"description"`
+	Language                  string               `json:"language"`
 	Contacts                  []string             `json:"contacts"`
 	Location                  primitive.ObjectID   `json:"location,omitempty" bson:"location,omitempty"`
 	Role                      Role                 `json:"role" validate:"required,oneof=admin specialist"`
