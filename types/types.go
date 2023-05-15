@@ -247,7 +247,7 @@ func ValidateEnum(fl validator.FieldLevel) bool {
 	return value.IsValid()
 }
 
-// TODO: how_to_help_the_project can has many values?
+// TODO: how_to_help_the_project can has many values? can be empty?
 type Project struct {
 	ID                   primitive.ObjectID    `json:"_id,omitempty" bson:"_id,omitempty"`
 	Slug                 *string               `json:"slug, omitempty" bson:"slug,omitempty"`

@@ -50,6 +50,56 @@ func createIndex(coll *mongo.Collection, indexes Indexes) {
 	}
 }
 
+func initIndexes() {
+	indexes := Indexes{
+		{
+			Keys:    "slug",
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys: "tags",
+		},
+		{
+			Keys: "title",
+		},
+	}
+	usersIndexes := Indexes{
+		{
+			Keys: "full_name",
+		},
+		{
+			Keys: "job",
+		},
+	}
+	eventsIndexes := append(indexes, Indexes{
+		{
+			Keys: "location",
+		},
+	}...)
+
+	projectIndexes := append(indexes, Indexes{
+		{
+			Keys: "project_status",
+		},
+		{
+			Keys: "how_to_help_the_project",
+		},
+		{
+			Keys: "location",
+		},
+	}...)
+
+	// Add indexes
+	researches, _ := GetCollection("researches")
+	createIndex(researches, indexes)
+	projects, _ := GetCollection("projects")
+	createIndex(projects, projectIndexes)
+	events, _ := GetCollection("events")
+	createIndex(events, eventsIndexes)
+	users, _ := GetCollection("users")
+	createIndex(users, usersIndexes)
+}
+
 func InitDb() {
 	clientOptions := GetClientOptions()
 
@@ -58,41 +108,7 @@ func InitDb() {
 		log.Fatal(err)
 	} else {
 		client = newClient
-
-		indexes := Indexes{
-			{
-				Keys:    "slug",
-				Options: options.Index().SetUnique(true),
-			},
-			{
-				Keys: "tags",
-			},
-			{
-				Keys: "title",
-			},
-
-			{
-				Keys: "location",
-			},
-		}
-		usersIndexes := Indexes{
-			{
-				Keys: "full_name",
-			},
-			{
-				Keys: "job",
-			},
-		}
-
-		// Add indexes
-		researches, _ := GetCollection("researches")
-		createIndex(researches, indexes)
-		projects, _ := GetCollection("projects")
-		createIndex(projects, indexes)
-		events, _ := GetCollection("events")
-		createIndex(events, indexes)
-		users, _ := GetCollection("users")
-		createIndex(users, usersIndexes)
+		initIndexes()
 	}
 }
 
