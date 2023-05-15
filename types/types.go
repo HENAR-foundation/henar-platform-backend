@@ -1,9 +1,11 @@
 package types
 
 import (
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 type Translations struct {
@@ -35,12 +37,12 @@ type Contacts struct {
 type UserBody struct {
 	ID                        primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
 	Email                     string               `json:"email" validate:"required,email"`
-	Password                  string               `json:"-" validate:"required"`
+	Password                  string               `json:"password" validate:"required"`
 	Avatar                    string               `json:"avatar"`
 	FullName                  Translations         `json:"full_name"`
 	Description               string               `json:"description"`
 	Contacts                  []string             `json:"contacts"`
-	Location                  primitive.ObjectID   `json:"location"`
+	Location                  primitive.ObjectID   `json:"location,omitempty" bson:"location,omitempty"`
 	Role                      Role                 `json:"role"`
 	Job                       string               `json:"job"`
 	Tags                      []primitive.ObjectID `json:"tags"`
@@ -58,6 +60,7 @@ type UserBody struct {
 // TODO: concat User and UserBody
 // TODO: add Role by default on create user
 // TODO: return only specialist if user is not admin
+// TODO: add default language
 type User struct {
 	ID                        primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
 	Email                     string               `json:"email" validate:"required,email"`
@@ -66,8 +69,8 @@ type User struct {
 	FullName                  Translations         `json:"full_name" bson:"full_name"`
 	Description               string               `json:"description"`
 	Contacts                  []string             `json:"contacts"`
-	Location                  primitive.ObjectID   `json:"location"`
-	Role                      Role                 `json:"role"`
+	Location                  primitive.ObjectID   `json:"location,omitempty" bson:"location,omitempty"`
+	Role                      Role                 `json:"role" validate:"required,oneof=admin specialist"`
 	Job                       string               `json:"job"`
 	Tags                      []primitive.ObjectID `json:"tags"`
 	IncomingContactRequests   []primitive.ObjectID `json:"incoming_contact_requests,omitempty" bson:"incoming_contact_requests,omitempty"`
@@ -110,22 +113,49 @@ type Event struct {
 	Cover            string               `json:"cover"`
 	Title            Translations         `json:"title"`
 	Description      Translations         `json:"description"`
-	Location         primitive.ObjectID   `json:"location" validate:"required"`
+	Location         primitive.ObjectID   `json:"location,omitempty" bson:"location,omitempty"`
 	Date             time.Time            `json:"date" validate:"required"`
 	TermsOfVisit     Translations         `json:"terms_of_visit" bson:"terms_of_visit"`
 	Tags             []primitive.ObjectID `json:"tags" validate:"required"`
-	Author           primitive.ObjectID   `json:"author" validate:"required" bson:"author"`
+	CreatedBy        primitive.ObjectID   `json:"created_by,omitempty" validate:"required" bson:"created_by,omitempty"`
 	ModerationStatus ModerationStatus     `json:"moderation_status" bson:"moderation_status"`
 	ReasonOfReject   string               `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
 }
 
-type ModerationStatus int
+type ModerationStatus string
 
 const (
-	ForRevision ModerationStatus = iota
-	Accepted
-	Rejected
+	Pending  ModerationStatus = "pending"
+	Approved ModerationStatus = "approved"
+	Rejected ModerationStatus = "rejected"
 )
+
+func (s *ModerationStatus) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "pending":
+		*s = Pending
+	case "approved":
+		*s = Approved
+	case "rejected":
+		*s = Rejected
+	default:
+		return fmt.Errorf("unknown moderation status: %q", text)
+	}
+	return nil
+}
+
+func (s ModerationStatus) MarshalText() ([]byte, error) {
+	return []byte(s), nil
+}
+
+func (s ModerationStatus) IsValid() bool {
+	switch s {
+	case Pending, Approved, Rejected:
+		return true
+	}
+
+	return false
+}
 
 type HowToHelpTheProject string
 
@@ -135,41 +165,108 @@ const (
 	Resources HowToHelpTheProject = "resources"
 )
 
+func (s *HowToHelpTheProject) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "financing":
+		*s = Financing
+	case "expertise":
+		*s = Expertise
+	case "resources":
+		*s = Resources
+	default:
+		return fmt.Errorf("unknown how to help the project value: %q", text)
+	}
+	return nil
+}
+
+func (s HowToHelpTheProject) MarshalText() ([]byte, error) {
+	return []byte(s), nil
+}
+
+func (s HowToHelpTheProject) IsValid() bool {
+	switch s {
+	case Financing, Expertise, Resources:
+		return true
+	}
+
+	return false
+}
+
 type ProjectStatus string
 
 const (
-	Ideation             ProjectStatus = "Ideation"
-	Implementation       ProjectStatus = "Implementation"
-	LaunchAndExecution   ProjectStatus = "LaunchAndExecution"
-	PerfomanceAndControl ProjectStatus = "PerfomanceAndControl"
-	Closed               ProjectStatus = "Closed"
+	Ideation             ProjectStatus = "ideation"
+	Implementation       ProjectStatus = "implementation"
+	LaunchAndExecution   ProjectStatus = "launchAndExecution"
+	PerfomanceAndControl ProjectStatus = "perfomanceAndControl"
+	Closed               ProjectStatus = "closed"
 )
 
-type CreatedBy struct {
-	ID       primitive.ObjectID
-	FullName string `json:"full_name" bson:"full_name"`
-	Job      string `json:"job"`
+func (s *ProjectStatus) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "ideation":
+		*s = Ideation
+	case "implementation":
+		*s = Implementation
+	case "launchAndExecution":
+		*s = LaunchAndExecution
+	case "perfomanceAndControl":
+		*s = PerfomanceAndControl
+	case "closed":
+		*s = Closed
+	default:
+		return fmt.Errorf("unknown project status: %q", text)
+	}
+	return nil
 }
 
-type Project struct {
-	ID          primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
-	Slug        string               `json:"slug"`
-	Covers      []string             `json:"covers,omitempty" bson:"covers,omitempty"`
-	CreatedBy   CreatedBy            `json:"created_by" validate:"required" bson:"created_by"`
-	Title       Translations         `json:"title"`
-	Description Translations         `json:"description"`
-	Objective   Translations         `json:"objective"`
-	WhoIsNeeded Translations         `json:"who_is_needed"`
-	Tags        []primitive.ObjectID `json:"tags" validate:"required" bson:"tags"`
-	Applicants  []primitive.ObjectID `json:"applicants,omitempty" bson:"applicants,omitempty"`
-	Views       int64                `json:"views" bson:"views"`
-	// TODO: ModerationStatus and ReasonOfReject are available only for admin
-	ModerationStatus     ModerationStatus     `json:"moderation_status" bson:"moderation_status"`
-	ReasonOfReject       string               `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
-	SuccessfulApplicants []primitive.ObjectID `json:"successful_applicants,omitempty" bson:"successful_applicants,omitempty"`
-	// TODO: handler for reject applicant
-	RejectedApplicants []primitive.ObjectID `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
+func (s ProjectStatus) MarshalText() ([]byte, error) {
+	return []byte(s), nil
 }
+
+func (s ProjectStatus) ValidateEnum() bool {
+	switch s {
+	case Ideation, Implementation, LaunchAndExecution, PerfomanceAndControl, Closed:
+		return true
+	}
+
+	return false
+}
+
+type Enum interface {
+	IsValid() bool
+}
+
+func ValidateEnum(fl validator.FieldLevel) bool {
+	value, ok := fl.Field().Interface().(Enum)
+	if !ok {
+		return false
+	}
+	return value.IsValid()
+}
+
+// TODO: how_to_help_the_project can has many values?
+type Project struct {
+	ID                   primitive.ObjectID    `json:"_id,omitempty" bson:"_id,omitempty"`
+	Slug                 *string               `json:"slug, omitempty" bson:"slug,omitempty"`
+	Covers               []string              `json:"covers,omitempty" bson:"covers,omitempty"`
+	CreatedBy            primitive.ObjectID    `json:"created_by,omitempty" bson:"created_by,omitempty"`
+	Title                Translations          `json:"title"`
+	Description          Translations          `json:"description"`
+	Objective            Translations          `json:"objective"`
+	WhoIsNeeded          Translations          `json:"who_is_needed" bson:"who_is_needed"`
+	Tags                 []primitive.ObjectID  `json:"tags" validate:"required" bson:"tags"`
+	Views                *int64                `json:"views" bson:"views,omitempty"`
+	HowToHelpTheProject  HowToHelpTheProject   `json:"how_to_help_the_project" bson:"how_to_help_the_project,omitempty"`
+	ProjectStatus        ProjectStatus         `json:"project_status" bson:"project_status,omitempty"`
+	ModerationStatus     *ModerationStatus     `json:"moderation_status,omitempty" bson:"moderation_status,omitempty"`
+	ReasonOfReject       *string               `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
+	Applicants           *[]primitive.ObjectID `json:"applicants,omitempty" bson:"applicants,omitempty"`
+	SuccessfulApplicants *[]primitive.ObjectID `json:"successful_applicants,omitempty" bson:"successful_applicants,omitempty"`
+	RejectedApplicants   *[]primitive.ObjectID `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
+}
+
+// TODO: handler for reject applicant
 
 type Research struct {
 	ID               primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
@@ -178,7 +275,7 @@ type Research struct {
 	Description      Translations         `json:"description"`
 	Tags             []primitive.ObjectID `json:"tags" validate:"required"`
 	Link             string               `json:"link" validate:"required"`
-	Author           primitive.ObjectID   `json:"author" validate:"required"`
+	CreatedBy        primitive.ObjectID   `json:"created_by,omitempty" validate:"required" bson:"created_by,omitempty"`
 	ModerationStatus ModerationStatus     `json:"moderation_status" bson:"moderation_status"`
 	ReasonOfReject   string               `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
 }

@@ -70,6 +70,7 @@ func SignIn(c *fiber.Ctx) error {
 
 	sess.Set(AUTH_KEY, true)
 	sess.Set(USER_ID, user.ID.Hex())
+	sess.Set(USER_ROLE, string(user.Role))
 
 	sessErr = sess.Save()
 	if sessErr != nil {

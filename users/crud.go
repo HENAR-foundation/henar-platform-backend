@@ -50,7 +50,9 @@ func CreateUser(c *fiber.Ctx) error {
 	user := types.User{
 		Email:          uc.Email,
 		HashedPassword: hashedPassword,
+		Role:           "specialist",
 	}
+	v.Struct(user)
 
 	// Check if the email address is already in use
 	collection, _ := db.GetCollection("users")
@@ -140,16 +142,16 @@ func UpdateUser(c *fiber.Ctx) error {
 	filter = bson.M{"_id": objId}
 	update := bson.M{
 		"$set": bson.M{
-			"email":           userBody.Email,
-			"hashed_password": hashedPassword,
-			"avatar":          userBody.Avatar,
-			"full_name":       userBody.FullName,
-			"description":     userBody.Description,
-			"contacts":        userBody.Contacts,
-			"location":        userBody.Location,
-			"role":            userBody.Role,
-			"job":             userBody.Job,
-			"tags":            userBody.Tags,
+			"email":          userBody.Email,
+			"hashedPassword": hashedPassword,
+			"avatar":         userBody.Avatar,
+			"full_name":      userBody.FullName,
+			"description":    userBody.Description,
+			"contacts":       userBody.Contacts,
+			"location":       userBody.Location,
+			"role":           userBody.Role,
+			"job":            userBody.Job,
+			"tags":           userBody.Tags,
 			// add other fields here as necessary
 		},
 	}

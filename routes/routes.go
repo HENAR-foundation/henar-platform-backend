@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	store    *session.Store
-	AUTH_KEY string = "authentificated"
-	USER_ID  string = "user_id"
+	store     *session.Store
+	AUTH_KEY  string = "authentificated"
+	USER_ID   string = "user_id"
+	USER_ROLE string = "user_role"
 )
 
 func Setup(app *fiber.App) {
@@ -73,15 +74,15 @@ func Setup(app *fiber.App) {
 	tagsGroupSecured.Delete("/:id", tags.DeleteTag)
 
 	// Projects routes
-	projectsGroup := app.Group("/v1/projects")
+	projectsGroup := app.Group("/v1/projects", AuthorMiddleware, AdminMiddleware)
 	projectsGroup.Get("", projects.GetProjects)
 	projectsGroup.Get("/:slug", projects.GetProject)
 
-	projectsGroupSecured := app.Group("/v1/projects", SessionMiddleware)
+	projectsGroupSecured := app.Group("/v1/projects", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
+	projectsGroupSecured.Post("", projects.CreateProject(store))
 	projectsGroupSecured.Get("/respond/:id", projects.RespondToProject(store))
-	projectsGroupSecured.Post("", projects.CreateProject)
 	projectsGroupSecured.Patch("/:id", projects.UpdateProject)
-	projectsGroupSecured.Delete("/:id", projects.DeleteProject)
+	projectsGroupSecured.Delete("/:id", projects.DeleteProject(store))
 
 	// Researches routes
 	researchesGroup := app.Group("/v1/researches")
