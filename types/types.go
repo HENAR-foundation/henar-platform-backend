@@ -182,3 +182,7 @@ type Translations struct {
 	Ru string `bson:"ru" json:"ru" validate:"required_without_all=En Hy"`
 	Hy string `bson:"hy" json:"hy" validate:"required_without_all=En Ru"`
 }
+
+type FileResponce struct {
+	URL string `bson:"en" json:"url"`
+}
