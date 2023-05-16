@@ -56,14 +56,10 @@ func GetProject(c *fiber.Ctx) error {
 	}
 
 	// Remove the fields if the user is not admin or author
-	userRole := c.Locals("userRole")
-	userId := c.Locals("user_id")
-
-	if userRole != "admin" && userId != result.CreatedBy.Hex() {
-		result.ModerationStatus = nil
-		result.ReasonOfReject = nil
-		result.Applicants = nil
-		result.RejectedApplicants = nil
+	if c.Locals("userRole") != "admin" &&
+		c.Locals("user_id") != result.CreatedBy.Hex() {
+		fieldsToUpdate := []string{"ModerationStatus", "ReasonOfReject", "Applicants", "RejectApplicant"}
+		utils.UpdateResultForUserRole(&result, fieldsToUpdate)
 	}
 
 	// Marshal the project struct to JSON format
@@ -131,15 +127,9 @@ func GetProjects(c *fiber.Ctx) error {
 	}
 
 	// Remove the fields if the user is not admin
-	userRole := c.Locals("userRole")
-
-	if userRole != "admin" {
-		for i := range results {
-			results[i].ModerationStatus = nil
-			results[i].ReasonOfReject = nil
-			results[i].Applicants = nil
-			results[i].RejectedApplicants = nil
-		}
+	if c.Locals("userRole") != "admin" {
+		fieldsToUpdate := []string{"ModerationStatus", "ReasonOfReject", "Applicants", "RejectApplicant"}
+		utils.UpdateResultsForUserRole(results, fieldsToUpdate)
 	}
 
 	// Marshal the result to JSON
@@ -185,6 +175,7 @@ func CreateProject(store *session.Store) func(c *fiber.Ctx) error {
 			language = "en" // default language is English
 		}
 
+		// TODO: delete session
 		sess, err := store.Get(c)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -262,9 +253,6 @@ func UpdateProject(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
-	userRole := c.Locals("userRole")
-	userId := c.Locals("user_id")
-
 	// Validate the required fields
 	v := validator.New()
 	v.RegisterValidation("enum", types.ValidateEnum)
@@ -283,14 +271,15 @@ func UpdateProject(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error finding project: " + err.Error())
 	}
 
-	if userRole != "admin" && userId != project.CreatedBy.Hex() {
+	if c.Locals("userRole") != "admin" &&
+		c.Locals("user_id") != project.CreatedBy.Hex() {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"message": "Permission or ownership error",
 		})
 	}
 
-	if userRole != "admin" {
-		// owner can't edit
+	if c.Locals("userRole") != "admin" {
+		// owner can't edit the following fields
 		if updateBody.ModerationStatus != nil ||
 			updateBody.ReasonOfReject != nil ||
 			updateBody.Views != nil ||
@@ -303,7 +292,6 @@ func UpdateProject(c *fiber.Ctx) error {
 
 	slugText := utils.CreateSlug(updateBody.Title)
 	updateBody.Slug = &slugText
-	fmt.Println(updateBody.Applicants)
 
 	// Update the project document in MongoDB
 	filter := bson.M{"_id": objId}

@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"henar-backend/types"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -12,6 +13,40 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+func UpdateResultForUserRole(result interface{}, fieldsToUpdate []string) {
+	resultValue := reflect.ValueOf(result)
+
+	if resultValue.Kind() != reflect.Ptr || resultValue.Elem().Kind() != reflect.Struct {
+		// Handle error: result is not a pointer to a struct
+		return
+	}
+
+	resultElem := resultValue.Elem()
+
+	for _, field := range fieldsToUpdate {
+		fieldValue := resultElem.FieldByName(field)
+
+		if fieldValue.IsValid() && fieldValue.CanSet() {
+			fieldValue.Set(reflect.Zero(fieldValue.Type()))
+		}
+	}
+}
+
+func UpdateResultsForUserRole(results interface{}, fieldsToUpdate []string) {
+	resultsValue := reflect.ValueOf(results)
+
+	if resultsValue.Kind() != reflect.Slice {
+		// TODO: Handle error: results is not a slice
+		return
+	}
+
+	for i := 0; i < resultsValue.Len(); i++ {
+		resultValue := resultsValue.Index(i)
+
+		UpdateResultForUserRole(resultValue.Addr().Interface(), fieldsToUpdate)
+	}
+}
 
 func GetSort(c *fiber.Ctx) primitive.D {
 	sort := c.Query("sort")

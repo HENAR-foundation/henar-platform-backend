@@ -57,6 +57,7 @@ type UserBody struct {
 	Notifications             []primitive.ObjectID `json:"notification,omitempty" bson:"notification,omitempty"`
 }
 
+// TODO: add Events, ... [] to user for admin
 // TODO: concat User and UserBody
 // TODO: add Role by default on create user
 // TODO: how to add required for other fields after registration?
@@ -111,6 +112,7 @@ type Notification struct {
 
 type Event struct {
 	ID               primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
+	CreatedBy        primitive.ObjectID   `json:"created_by,omitempty" bson:"created_by,omitempty"`
 	Slug             string               `json:"slug"`
 	Cover            string               `json:"cover"`
 	Title            Translations         `json:"title"`
@@ -119,9 +121,8 @@ type Event struct {
 	Date             time.Time            `json:"date" validate:"required"`
 	TermsOfVisit     Translations         `json:"terms_of_visit" bson:"terms_of_visit"`
 	Tags             []primitive.ObjectID `json:"tags" validate:"required"`
-	CreatedBy        primitive.ObjectID   `json:"created_by,omitempty" validate:"required" bson:"created_by,omitempty"`
-	ModerationStatus ModerationStatus     `json:"moderation_status" bson:"moderation_status"`
-	ReasonOfReject   string               `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
+	ModerationStatus *ModerationStatus    `json:"moderation_status,omitempty" bson:"moderation_status,omitempty"`
+	ReasonOfReject   *string              `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
 }
 
 type ModerationStatus string
@@ -290,6 +291,7 @@ type Statistic struct {
 	YearDelta *int64             `json:"year_delta" validate:"required"`
 }
 
+// TODO: create location on user create
 type Location struct {
 	ID         primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Value      string             `json:"value" validate:"required"`

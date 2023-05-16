@@ -44,11 +44,11 @@ func Setup(app *fiber.App) {
 	locationsGroupSecured.Delete("/:id", locations.DeleteLocation)
 
 	// Events routes
-	eventsGroup := app.Group("/v1/events")
+	eventsGroup := app.Group("/v1/events", AdminMiddleware, AuthorMiddleware)
 	eventsGroup.Get("", events.GetEvents)
 	eventsGroup.Get("/:slug", events.GetEvent)
 
-	eventsGroupSecured := app.Group("/v1/events", SessionMiddleware)
+	eventsGroupSecured := app.Group("/v1/events", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
 	eventsGroupSecured.Post("", events.CreateEvent)
 	eventsGroupSecured.Patch("/:id", events.UpdateEvent)
 	eventsGroupSecured.Delete("/:id", events.DeleteEvent)
