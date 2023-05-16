@@ -5,6 +5,7 @@ import (
 	"henar-backend/locations"
 	"henar-backend/projects"
 	"henar-backend/researches"
+	"henar-backend/static"
 	"henar-backend/statistics"
 	"henar-backend/tags"
 	"henar-backend/users"
@@ -48,7 +49,7 @@ func Setup(app *fiber.App) {
 	eventsGroup.Get("", events.GetEvents)
 	eventsGroup.Get("/:slug", events.GetEvent)
 
-// 	eventsGroupSecured := app.Group("/v1/events", SessionMiddleware)
+	// 	eventsGroupSecured := app.Group("/v1/events", SessionMiddleware)
 	eventsGroup.Post("", events.CreateEvent)
 	eventsGroup.Patch("/:id", events.UpdateEvent)
 	eventsGroup.Delete("/:id", events.DeleteEvent)
@@ -89,7 +90,7 @@ func Setup(app *fiber.App) {
 	researchesGroup.Get("", researches.GetResearches)
 	researchesGroup.Get("/:slug", researches.GetResearch)
 
-// 	researchesGroupSecured := app.Group("/v1/researches", SessionMiddleware)
+	// 	researchesGroupSecured := app.Group("/v1/researches", SessionMiddleware)
 	researchesGroup.Post("", researches.CreateResearch)
 	researchesGroup.Patch("/:id", researches.UpdateResearch)
 	researchesGroup.Delete("/:id", researches.DeleteResearch)
@@ -103,6 +104,9 @@ func Setup(app *fiber.App) {
 	usersGroup.Post("", users.CreateUser)
 	usersGroup.Patch("/:id", users.UpdateUser)
 	usersGroup.Delete("/:id", users.DeleteUser)
+
+	staticGroup := app.Group("/v1/files")
+	staticGroup.Post("/upload", static.UploadFile)
 
 	app.Listen(":8080")
 }

@@ -34,6 +34,11 @@ definitions:
     - location
     - tags
     type: object
+  types.FileResponce:
+    properties:
+      url:
+        type: string
+    type: object
   types.Location:
     properties:
       _id:
@@ -570,6 +575,28 @@ paths:
       summary: Get event by slug
       tags:
       - events
+  /v1/files/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a static file to Henar DigitalOcean failopoika's and get
+        the uri
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.FileResponce'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Upload file
+      tags:
+      - files
   /v1/locations:
     get:
       consumes:

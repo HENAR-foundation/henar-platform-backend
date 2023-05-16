@@ -3,7 +3,7 @@ package main
 import (
 	"henar-backend/db"
 	"henar-backend/routes"
-	"log"
+	"henar-backend/static"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -20,7 +20,8 @@ import (
 func main() {
 	db.InitDb()
 
-	log.Println("gsrg")
+	static.Init()
+
 	app := fiber.New()
 
 	app.Use(logger.New())
