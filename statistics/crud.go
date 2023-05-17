@@ -120,6 +120,12 @@ func GetStatistic(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/statistics [post]
 func CreateStatistic(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	collection, _ := db.GetCollection("statistics")
 
 	// Parse request body into statistic struct
@@ -169,6 +175,12 @@ func CreateStatistic(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/statistics/{id} [patch]
 func UpdateStatistic(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	collection, _ := db.GetCollection("statistics")
 
 	// Get the statistic ID from the URL path parameter
@@ -224,6 +236,12 @@ func UpdateStatistic(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Error deleting statistic: <error message>"
 // @Router /v1/statistics/{id} [delete]
 func DeleteStatistic(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	collection, _ := db.GetCollection("statistics")
 
 	// Get the statistic ID from the URL path parameter
