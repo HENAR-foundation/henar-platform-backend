@@ -249,6 +249,7 @@ func ValidateEnum(fl validator.FieldLevel) bool {
 }
 
 // TODO: how_to_help_the_project can has many values? can be empty?
+// TODO: author can update project after reject
 type Project struct {
 	ID                   primitive.ObjectID    `json:"_id,omitempty" bson:"_id,omitempty"`
 	Slug                 *string               `json:"slug, omitempty" bson:"slug,omitempty"`
@@ -273,14 +274,14 @@ type Project struct {
 
 type Research struct {
 	ID               primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
+	CreatedBy        primitive.ObjectID   `json:"created_by,omitempty" bson:"created_by,omitempty"`
 	Slug             string               `json:"slug"`
 	Title            Translations         `json:"title"`
 	Description      Translations         `json:"description"`
 	Tags             []primitive.ObjectID `json:"tags" validate:"required"`
 	Link             string               `json:"link" validate:"required"`
-	CreatedBy        primitive.ObjectID   `json:"created_by,omitempty" validate:"required" bson:"created_by,omitempty"`
-	ModerationStatus ModerationStatus     `json:"moderation_status" bson:"moderation_status"`
-	ReasonOfReject   string               `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
+	ModerationStatus *ModerationStatus    `json:"moderation_status,omitempty" bson:"moderation_status,omitempty"`
+	ReasonOfReject   *string              `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
 }
 
 type Statistic struct {
@@ -291,7 +292,7 @@ type Statistic struct {
 	YearDelta *int64             `json:"year_delta" validate:"required"`
 }
 
-// TODO: create location on user create
+// TODO: create location on user and event create
 type Location struct {
 	ID         primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Value      string             `json:"value" validate:"required"`

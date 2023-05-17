@@ -85,11 +85,11 @@ func Setup(app *fiber.App) {
 	projectsGroupSecured.Delete("/:id", projects.DeleteProject(store))
 
 	// Researches routes
-	researchesGroup := app.Group("/v1/researches")
+	researchesGroup := app.Group("/v1/researches", AdminMiddleware, AuthorMiddleware)
 	researchesGroup.Get("", researches.GetResearches)
 	researchesGroup.Get("/:slug", researches.GetResearch)
 
-	researchesGroupSecured := app.Group("/v1/researches", SessionMiddleware)
+	researchesGroupSecured := app.Group("/v1/researches", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
 	researchesGroupSecured.Post("", researches.CreateResearch)
 	researchesGroupSecured.Patch("/:id", researches.UpdateResearch)
 	researchesGroupSecured.Delete("/:id", researches.DeleteResearch)

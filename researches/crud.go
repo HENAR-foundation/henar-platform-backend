@@ -50,6 +50,7 @@ func GetResearches(c *fiber.Ctx) error {
 	if len(sort) != 0 {
 		findOptions.SetSort(sort)
 	}
+	// TODO: User can't get pending | rejected entity
 
 	// Query the database and get the cursor
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)
@@ -60,7 +61,11 @@ func GetResearches(c *fiber.Ctx) error {
 	// Get the results from the cursor
 	var results []types.Research
 	if err = cursor.All(context.TODO(), &results); err != nil {
-		panic(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error finding projects")
+	}
+	if c.Locals("userRole") != "admin" {
+		fieldsToUpdate := []string{"ModerationStatus", "ReasonOfReject"}
+		utils.UpdateResultsForUserRole(results, fieldsToUpdate)
 	}
 
 	// Marshal the research struct to JSON format
@@ -107,6 +112,12 @@ func GetResearch(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error getting research: " + err.Error())
 	}
 
+	if c.Locals("userRole") != "admin" &&
+		c.Locals("user_id") != result.CreatedBy.Hex() {
+		fieldsToUpdate := []string{"ModerationStatus", "ReasonOfReject"}
+		utils.UpdateResultForUserRole(&result, fieldsToUpdate)
+	}
+
 	// Marshal the research struct to JSON format
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
@@ -139,9 +150,6 @@ func CreateResearch(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
-	slugText := utils.CreateSlug(research.Title)
-	research.Slug = slugText
-
 	// Validate the required fields
 	v := validator.New()
 	err = v.Struct(research)
@@ -149,17 +157,25 @@ func CreateResearch(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving created research: " + err.Error())
 	}
 
+	// update fields
+	userId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+	research.CreatedBy = userId
+	pending := types.Pending
+	research.ModerationStatus = &pending
+	slugText := utils.CreateSlug(research.Title)
+	research.Slug = slugText
+
 	// Insert research document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), research)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error creating research: " + err.Error())
 	}
 
-	// Get the ID of the inserted research document
-	objId := result.InsertedID.(primitive.ObjectID)
-
 	// Retrieve the updated research from MongoDB
-	filter := bson.M{"_id": objId}
+	filter := bson.M{"_id": result.InsertedID.(primitive.ObjectID)}
 	var createdResearch types.Research
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdResearch)
 	if err != nil {
@@ -191,26 +207,53 @@ func UpdateResearch(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
-	// Parse the request body into a research struct
-	var research types.Research
-	err = c.BodyParser(&research)
+	// Parse the request body into a updateBody struct
+	var updateBody types.Research
+	err = c.BodyParser(&updateBody)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
-	slugText := utils.CreateSlug(research.Title)
-	research.Slug = slugText
-
 	// Validate the required fields
 	v := validator.New()
-	err = v.Struct(research)
+	err = v.Struct(updateBody)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Validation error: " + err.Error())
 	}
 
+	// Find the Research document from MongoDB
+	var result types.Research
+	err = collection.FindOne(context.TODO(), bson.M{"_id": objId}).Decode(&result)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(fiber.StatusNotFound).SendString("Research not found")
+		}
+		return c.Status(fiber.StatusInternalServerError).SendString("Error getting research: " + err.Error())
+	}
+
+	if c.Locals("userRole") != "admin" &&
+		c.Locals("user_id") != result.CreatedBy.Hex() {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
+	if c.Locals("userRole") != "admin" {
+		// owner can't edit the following fields
+		if updateBody.ModerationStatus != nil ||
+			updateBody.ReasonOfReject != nil {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"message": "Permission or ownership error",
+			})
+		}
+	}
+
+	slugText := utils.CreateSlug(updateBody.Title)
+	updateBody.Slug = slugText
+
 	// Update the research document in MongoDB
 	filter := bson.M{"_id": objId}
-	update := bson.M{"$set": research}
+	update := bson.M{"$set": updateBody}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating research: " + err.Error())
@@ -247,6 +290,23 @@ func DeleteResearch(c *fiber.Ctx) error {
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+
+	// Find the research document from MongoDB
+	var research types.Research
+	err = collection.FindOne(context.TODO(), bson.M{"_id": objId}).Decode(&research)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(fiber.StatusNotFound).SendString("Research not found")
+		}
+		return c.Status(fiber.StatusInternalServerError).SendString("Error getting research: " + err.Error())
+	}
+
+	if c.Locals("userRole") != "admin" &&
+		c.Locals("user_id") != research.CreatedBy.Hex() {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
 	}
 
 	filter := bson.D{{Key: "_id", Value: objId}}

@@ -60,7 +60,7 @@ func GetEvents(c *fiber.Ctx) error {
 	// Get the results from the cursor
 	var results []types.Event
 	if err = cursor.All(context.TODO(), &results); err != nil {
-		panic(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error finding projects")
 	}
 
 	if c.Locals("userRole") != "admin" {
@@ -154,14 +154,16 @@ func CreateEvent(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving created event: " + err.Error())
 	}
 
+	// TODO: pending by default, but Admin need to set any
+	// TODO: user can creare reason_of_reject, remove access
+	// TODO: need ability for user can change ModerationStatus
+
 	// update fields
 	userId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
-	// TODO: pending by default, but Admin need to set any
-	// TODO: user can creare reason_of_reject, remove access
 	event.CreatedBy = userId
 	pending := types.Pending
 	event.ModerationStatus = &pending
@@ -174,11 +176,8 @@ func CreateEvent(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error creating event: " + err.Error())
 	}
 
-	// Get the ID of the inserted event document
-	objId := result.InsertedID.(primitive.ObjectID)
-
 	// Retrieve the updated event from MongoDB
-	filter := bson.M{"_id": objId}
+	filter := bson.M{"_id": result.InsertedID.(primitive.ObjectID)}
 	var createdEvent types.Event
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdEvent)
 	if err != nil {
