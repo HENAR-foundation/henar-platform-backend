@@ -27,12 +27,12 @@ import (
 // @Router /users [post]
 func CreateUser(c *fiber.Ctx) error {
 	// Parse request body into user struct
-	var uc types.UserCredentials
+	var uc types.UserTest
 	err := c.BodyParser(&uc)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
-	fmt.Println(uc)
+	fmt.Println(uc.Email)
 
 	// Validate the required fields
 	v := validator.New()
@@ -42,22 +42,42 @@ func CreateUser(c *fiber.Ctx) error {
 	}
 
 	// Hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(uc.Password), bcrypt.DefaultCost)
+	Password, err := bcrypt.GenerateFromPassword(
+		[]byte(uc.Password),
+		bcrypt.DefaultCost,
+	)
 	if err != nil {
 		return fmt.Errorf("Error hashing password: %w", err)
 	}
-	// var user types.User
-	user := types.User{
-		Email:          uc.Email,
-		HashedPassword: hashedPassword,
-		Role:           "specialist",
+
+	specialist := types.Specialist
+	user := types.UserTest{
+		UserCredentials: types.UserCredentials{
+			Email:    uc.Email,
+			Password: string(Password),
+		},
+		UserBody: types.UserBody{
+			Role: &specialist,
+			ContactsRequest: types.ContactsRequest{
+				IncomingContactRequests:   make(map[primitive.ObjectID]bool),
+				OutgoingContactRequests:   make(map[primitive.ObjectID]bool),
+				ConfirmedContactsRequests: make(map[primitive.ObjectID]bool),
+				BlockedUsers:              make(map[primitive.ObjectID]bool),
+			},
+			UserProjects: types.UserProjects{
+				ProjectsApplications:  make(map[primitive.ObjectID]bool),
+				ConfirmedApplications: make(map[primitive.ObjectID]bool),
+				RejectedApplicants:    make(map[primitive.ObjectID]bool),
+				CreatedProjects:       make(map[primitive.ObjectID]bool),
+			},
+		},
 	}
 	v.Struct(user)
 
 	// Check if the email address is already in use
 	collection, _ := db.GetCollection("users")
-	filter := bson.M{"email": user.Email}
-	var existingUser types.User
+	filter := bson.M{"user_credentials.email": user.UserCredentials.Email}
+	var existingUser types.UserTest
 	err = collection.FindOne(context.TODO(), filter).Decode(&existingUser)
 	if err == nil {
 		return fmt.Errorf("Email address already in use")
@@ -74,7 +94,7 @@ func CreateUser(c *fiber.Ctx) error {
 
 	// Retrieve the updated user from MongoDB
 	filter = bson.M{"_id": objId}
-	var createdUser types.User
+	var createdUser types.UserTest
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdUser)
 	if err != nil {
 		return fmt.Errorf("Error retrieving created user: ", err)
@@ -98,15 +118,15 @@ func CreateUser(c *fiber.Ctx) error {
 // @Router /users/{id} [patch]
 func UpdateUser(c *fiber.Ctx) error {
 	// Parse request body into user struct
-	var userBody types.UserBody
-	err := c.BodyParser(&userBody)
+	var updateBody types.UserTest
+	err := c.BodyParser(&updateBody)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
 	// Validate the required fields
 	v := validator.New()
-	err = v.Struct(userBody)
+	err = v.Struct(updateBody)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error validating user: " + err.Error())
 	}
@@ -121,17 +141,17 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	// Hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userBody.Password), bcrypt.DefaultCost)
+	Password, err := bcrypt.GenerateFromPassword([]byte(updateBody.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("Error hashing password: %w", err)
 	}
-	var user types.User
-	user.HashedPassword = hashedPassword
+	// var user types.UserTest
+	updateBody.Password = string(Password)
 
 	// Update the user document in MongoDB
 	collection, _ := db.GetCollection("users")
-	filter := bson.M{"email": userBody.Email}
-	var existingUser types.User
+	filter := bson.M{"user_credentials.email": updateBody.Email}
+	var existingUser types.UserTest
 	err = collection.FindOne(context.TODO(), filter).Decode(&existingUser)
 	if existingUser.ID != objId {
 		if err == nil {
@@ -139,29 +159,30 @@ func UpdateUser(c *fiber.Ctx) error {
 		}
 	}
 
-	filter = bson.M{"_id": objId}
-	update := bson.M{
-		"$set": bson.M{
-			"email":          userBody.Email,
-			"hashedPassword": hashedPassword,
-			"avatar":         userBody.Avatar,
-			"full_name":      userBody.FullName,
-			"description":    userBody.Description,
-			"contacts":       userBody.Contacts,
-			"location":       userBody.Location,
-			"role":           userBody.Role,
-			"job":            userBody.Job,
-			"tags":           userBody.Tags,
-			// add other fields here as necessary
-		},
+	if c.Locals("userRole") != "admin" &&
+		c.Locals("user_id") != existingUser.ID.Hex() {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
 	}
+
+	if c.Locals("userRole") != "admin" {
+		if updateBody.Role != nil {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"message": "Permission or ownership error",
+			})
+		}
+	}
+
+	filter = bson.M{"_id": objId}
+	update := bson.M{"$set": updateBody}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
 	// Retrieve the updated user from MongoDB
-	var updatedUser types.User
+	var updatedUser types.UserTest
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedUser)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated user: " + err.Error())
@@ -183,6 +204,8 @@ func UpdateUser(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/users/{id} [get]
 func GetUser(c *fiber.Ctx) error {
+	// TODO: panic on not logged user
+	// TODO: dont send projects for author
 	// Parse the user ID from the request parameters
 	id := c.Params("id")
 
@@ -192,13 +215,59 @@ func GetUser(c *fiber.Ctx) error {
 	// Retrieve the user from MongoDB
 	collection, _ := db.GetCollection("users")
 	filter := bson.M{"_id": objId}
-	var user types.User
+	var user types.UserTest
 	err := collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	fieldsToUpdate := []string{"Password"}
+	utils.UpdateResultForUserRole(&user, fieldsToUpdate)
+
+	userRole := c.Locals("userRole")
+
+	if userRole != "admin" {
+		fmt.Println(1)
+		fieldsToUpdate := []string{"Role"}
+		utils.UpdateResultForUserRole(&user, fieldsToUpdate)
+	}
+
+	userId := c.Locals("user_id")
+
+	if userId == nil {
+		fmt.Println(2)
+		fieldsToUpdate := []string{"Contacts", "ContactsRequest", "UserProjects", "UserCredentials"}
+		utils.UpdateResultForUserRole(&user, fieldsToUpdate)
+
+		return c.Status(http.StatusOK).JSON(user)
+	}
+
+	userObjId, err := primitive.ObjectIDFromHex(userId.(string))
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+
+	// check access to requests and projects
+	if userRole != "admin" ||
+		userId != user.ID {
+		fmt.Println(3)
+		fmt.Println(userRole != "admin")
+		fmt.Println(userId != user.ID)
+
+		fieldsToUpdate := []string{"ContactsRequest", "UserProjects", "Password"}
+		utils.UpdateResultForUserRole(&user, fieldsToUpdate)
+	}
+
+	// check access to contacts
+	if userRole != "admin" ||
+		user.ConfirmedContactsRequests[userObjId] ||
+		userId != user.ID {
+		fmt.Println(4)
+		fieldsToUpdate := []string{"Contacts", "UserCredentials"}
+		utils.UpdateResultForUserRole(&user, fieldsToUpdate)
 	}
 
 	// Set the response headers and write the response body
@@ -234,6 +303,11 @@ func GetUsers(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(errMsg)
 	}
 
+	userRole := c.Locals("userRole")
+
+	if userRole != "admin" {
+		filter["user_body.role"] = "specialist"
+	}
 	sort := utils.GetSort(c)
 	if len(sort) != 0 {
 		findOptions.SetSort(sort)
@@ -248,15 +322,24 @@ func GetUsers(c *fiber.Ctx) error {
 	defer cur.Close(context.Background())
 
 	// Convert the list of users to a slice and set the response headers and body
-	var users []types.User
+	var users []types.UserTest
 	for cur.Next(context.Background()) {
-		var user types.User
+		var user types.UserTest
 		err := cur.Decode(&user)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).SendString("Error decoding user: " + err.Error())
 		}
 		users = append(users, user)
 	}
+
+	fieldsToUpdate := []string{"Password"}
+	utils.UpdateResultsForUserRole(users, fieldsToUpdate)
+
+	if userRole != "admin" {
+		fieldsToUpdate := []string{"Role", "Contacts", "ContactsRequest", "UserProjects", "UserCredentials"}
+		utils.UpdateResultsForUserRole(users, fieldsToUpdate)
+	}
+
 	return c.Status(http.StatusOK).JSON(users)
 }
 
@@ -272,6 +355,12 @@ func GetUsers(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Error deleting user: <error message>"
 // @Router /v1/users/{id} [delete]
 func DeleteUser(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	// Get the ID of the user to delete
 	userId := c.Params("id")
 
@@ -296,4 +385,208 @@ func DeleteUser(c *fiber.Ctx) error {
 
 	// Set the response headers and write the response body
 	return c.SendString("User deleted successfully")
+}
+
+func RequestContacts(c *fiber.Ctx) error {
+	collection, err := db.GetCollection("users")
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
+	}
+
+	// Get the project ID from the URL path parameter
+	approverId, err := primitive.ObjectIDFromHex(c.Params("id"))
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
+	}
+
+	requesterId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+
+	// get requester
+	filter := bson.M{"_id": requesterId}
+	var requester types.UserTest
+	err = collection.FindOne(context.TODO(), filter).Decode(&requester)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	// get approver
+	filter = bson.M{"_id": approverId}
+	var approver types.UserTest
+	err = collection.FindOne(context.TODO(), filter).Decode(&approver)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	var msg string
+	if approver.IncomingContactRequests[requesterId] {
+		delete(approver.IncomingContactRequests, requesterId)
+		delete(requester.OutgoingContactRequests, approverId)
+		msg = "Contact request deleted successfully."
+	} else {
+		approver.IncomingContactRequests[requesterId] = true
+		requester.OutgoingContactRequests[approverId] = true
+		msg = "Contact request added successfully."
+	}
+
+	// update approver
+	filter = bson.M{"_id": approverId}
+	update := bson.M{"$set": approver}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	// update requester
+	filter = bson.M{"_id": requesterId}
+	update = bson.M{"$set": requester}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	// Set the response headers and write the response body
+	return c.SendString(msg)
+}
+
+func ApproveContactsRequest(c *fiber.Ctx) error {
+	collection, err := db.GetCollection("users")
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
+	}
+
+	// Get the project ID from the URL path parameter
+	incomingRequestUserId, err := primitive.ObjectIDFromHex(c.Params("id"))
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
+	}
+
+	userId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+
+	// get approver
+	filter := bson.M{"_id": userId}
+	var user types.UserTest
+	err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	// // get approver
+	// filter = bson.M{"_id": approverId}
+	// var approver types.UserTest
+	// err = collection.FindOne(context.TODO(), filter).Decode(&approver)
+	// if err != nil {
+	// 	if err == mongo.ErrNoDocuments {
+	// 		return c.Status(http.StatusNotFound).SendString("User not found")
+	// 	}
+	// 	return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	// }
+	fmt.Println(user.ContactsRequest.IncomingContactRequests)
+	fmt.Println(user.ContactsRequest.IncomingContactRequests[incomingRequestUserId])
+
+	if user.IncomingContactRequests[incomingRequestUserId] {
+		delete(user.IncomingContactRequests, incomingRequestUserId)
+		user.ConfirmedContactsRequests[incomingRequestUserId] = true
+	}
+
+	// update approver
+	filter = bson.M{"_id": userId}
+	update := bson.M{"$set": user}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	// update requester
+	// filter = bson.M{"_id": userId}
+	// update = bson.M{"$set": user}
+	// _, err = collection.UpdateOne(context.TODO(), filter, update)
+	// if err != nil {
+	// 	return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	// }
+
+	// Set the response headers and write the response body
+	// return nil
+	return c.SendString("Done")
+}
+
+func RejectContactsRequest(c *fiber.Ctx) error {
+	collection, err := db.GetCollection("users")
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
+	}
+
+	// Get the project ID from the URL path parameter
+	incomingRequestUserId, err := primitive.ObjectIDFromHex(c.Params("id"))
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
+	}
+
+	userId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+
+	// get approver
+	filter := bson.M{"_id": userId}
+	var user types.UserTest
+	err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	// // get approver
+	// filter = bson.M{"_id": approverId}
+	// var approver types.UserTest
+	// err = collection.FindOne(context.TODO(), filter).Decode(&approver)
+	// if err != nil {
+	// 	if err == mongo.ErrNoDocuments {
+	// 		return c.Status(http.StatusNotFound).SendString("User not found")
+	// 	}
+	// 	return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	// }
+	fmt.Println(user.ContactsRequest.IncomingContactRequests)
+	fmt.Println(user.ContactsRequest.IncomingContactRequests[incomingRequestUserId])
+
+	if user.IncomingContactRequests[incomingRequestUserId] {
+		delete(user.IncomingContactRequests, incomingRequestUserId)
+		user.BlockedUsers[incomingRequestUserId] = true
+	}
+
+	// update approver
+	filter = bson.M{"_id": userId}
+	update := bson.M{"$set": user}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	// update requester
+	// filter = bson.M{"_id": userId}
+	// update = bson.M{"$set": user}
+	// _, err = collection.UpdateOne(context.TODO(), filter, update)
+	// if err != nil {
+	// 	return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	// }
+
+	// Set the response headers and write the response body
+	// return nil
+	return c.SendString("Done")
 }

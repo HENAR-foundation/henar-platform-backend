@@ -159,69 +159,74 @@ func GetProjects(c *fiber.Ctx) error {
 // @Failure 400 {string} string "Error parsing request body"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/projects [post]
-func CreateProject(store *session.Store) func(c *fiber.Ctx) error {
-	return func(c *fiber.Ctx) error {
-		collection, _ := db.GetCollection("projects")
+func CreateProject(c *fiber.Ctx) error {
+	projectsCollection, _ := db.GetCollection("projects")
+	usersCollection, _ := db.GetCollection("users")
 
-		// Parse request body into project struct
-		var project types.Project
-		err := c.BodyParser(&project)
-		if err != nil {
-			return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
-		}
-
-		language := c.Query("language")
-		if language == "" {
-			language = "en" // default language is English
-		}
-
-		// TODO: delete session
-		sess, err := store.Get(c)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"message": "not authorized",
-			})
-		}
-		userId := sess.Get("user_id").(string)
-		userObjId, err := primitive.ObjectIDFromHex(userId)
-		if err != nil {
-			return c.Status(http.StatusBadRequest).SendString("Invalid ID")
-		}
-
-		project.CreatedBy = userObjId
-		pending := types.Pending
-		project.ModerationStatus = &pending
-
-		slugText := utils.CreateSlug(project.Title)
-		project.Slug = &slugText
-
-		// Validate the required fields
-		v := validator.New()
-		err = v.Struct(project)
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).SendString("Error retrieving created project: " + err.Error())
-		}
-
-		// Insert project document into MongoDB
-		result, err := collection.InsertOne(context.TODO(), project)
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).SendString("Error creating project: " + err.Error())
-		}
-
-		// Get the ID of the inserted project document
-		objId := result.InsertedID.(primitive.ObjectID)
-
-		// Retrieve the updated project from MongoDB
-		filter := bson.M{"_id": objId}
-		var createdProject types.Project
-		err = collection.FindOne(context.TODO(), filter).Decode(&createdProject)
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
-		}
-
-		// Set the response headers and write the response body
-		return c.Status(http.StatusCreated).JSON(createdProject)
+	// Parse request body into project struct
+	var project types.Project
+	err := c.BodyParser(&project)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
+
+	// Validate the required fields
+	v := validator.New()
+	err = v.Struct(project)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving created project: " + err.Error())
+	}
+
+	userId := c.Locals("user_id").(string)
+	userObjId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+
+	userFilter := bson.M{"_id": userObjId}
+	var user types.UserTest
+	err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	project.CreatedBy = userObjId
+	pending := types.Pending
+	project.ModerationStatus = &pending
+
+	slugText := utils.CreateSlug(project.Title)
+	project.Slug = &slugText
+
+	// Insert project document into MongoDB
+	result, err := projectsCollection.InsertOne(context.TODO(), project)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error creating project: " + err.Error())
+	}
+
+	// Get the ID of the inserted project document
+	projectObjId := result.InsertedID.(primitive.ObjectID)
+
+	// Retrieve the updated project from MongoDB
+	filter := bson.M{"_id": projectObjId}
+	var createdProject types.Project
+	err = projectsCollection.FindOne(context.TODO(), filter).Decode(&createdProject)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
+	}
+
+	user.CreatedProjects[createdProject.ID] = true
+
+	update := bson.M{"$set": user}
+	_, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	// Set the response headers and write the response body
+	return c.Status(http.StatusCreated).JSON(createdProject)
 }
 
 // UpdateProject updates an existing project in the database.
@@ -327,18 +332,18 @@ func UpdateProject(c *fiber.Ctx) error {
 // @Router /v1/projects/{id} [delete]
 func DeleteProject(store *session.Store) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		collection, _ := db.GetCollection("projects")
+		projectsCollection, _ := db.GetCollection("projects")
 
 		// Get the project ID from the URL path parameter
 		id := c.Params("id")
-		objId, err := primitive.ObjectIDFromHex(id)
+		projectObjId, err := primitive.ObjectIDFromHex(id)
 		if err != nil {
 			return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 		}
 
 		// Find the project document from MongoDB
 		var project types.Project
-		err = collection.FindOne(context.TODO(), bson.M{"_id": objId}).Decode(&project)
+		err = projectsCollection.FindOne(context.TODO(), bson.M{"_id": projectObjId}).Decode(&project)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				return c.Status(http.StatusNotFound).SendString("Project not found")
@@ -347,17 +352,41 @@ func DeleteProject(store *session.Store) func(c *fiber.Ctx) error {
 		}
 
 		// Check if the user has access to delete the project
+		userId := c.Locals("user_id").(string)
+
 		if c.Locals("userRole") != "admin" &&
-			c.Locals("user_id") != project.CreatedBy.Hex() {
+			userId != project.CreatedBy.Hex() {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"message": "Permission or ownership error",
 			})
 		}
+		userObjId, err := primitive.ObjectIDFromHex(userId)
+		if err != nil {
+			return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+		}
 
-		filter := bson.D{{Key: "_id", Value: objId}}
+		// update user project list
+		// TODO: delete for all applicants
+		usersCollection, _ := db.GetCollection("users")
+		userFilter := bson.M{"_id": userObjId}
+		var user types.UserTest
+		err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return c.Status(http.StatusNotFound).SendString("User not found")
+			}
+			return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+		}
+		delete(user.CreatedProjects, projectObjId)
+		update := bson.M{"$set": user}
+		_, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+		}
 
 		// Delete project document from MongoDB
-		result, err := collection.DeleteOne(context.TODO(), filter)
+		projectFilter := bson.D{{Key: "_id", Value: projectObjId}}
+		result, err := projectsCollection.DeleteOne(context.TODO(), projectFilter)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).SendString("Error deleting project: " + err.Error())
 		}

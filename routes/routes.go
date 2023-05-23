@@ -37,9 +37,9 @@ func Setup(app *fiber.App) {
 	locationsGroup.Get("", locations.GetLocations)
 	locationsGroup.Get("/suggestions", locations.GetLocationSuggestions)
 	locationsGroup.Get("/:id", locations.GetLocation)
+	locationsGroup.Post("", locations.CreateLocation)
 
-	locationsGroupSecured := app.Group("/v1/locations", SessionMiddleware)
-	locationsGroupSecured.Post("", locations.CreateLocation)
+	locationsGroupSecured := app.Group("/v1/locations", SessionMiddleware, AdminMiddleware)
 	locationsGroupSecured.Patch("/:id", locations.UpdateLocation)
 	locationsGroupSecured.Delete("/:id", locations.DeleteLocation)
 
@@ -58,7 +58,7 @@ func Setup(app *fiber.App) {
 	statisticsGroup.Get("", statistics.GetStatistics)
 	statisticsGroup.Get("/:id", statistics.GetStatistic)
 
-	statisticsGroupSecured := app.Group("/v1/statistics", SessionMiddleware)
+	statisticsGroupSecured := app.Group("/v1/statistics", SessionMiddleware, AdminMiddleware)
 	statisticsGroupSecured.Post("", statistics.CreateStatistic)
 	statisticsGroupSecured.Patch("/:id", statistics.UpdateStatistic)
 	statisticsGroupSecured.Delete("/:id", statistics.DeleteStatistic)
@@ -68,7 +68,7 @@ func Setup(app *fiber.App) {
 	tagsGroup.Get("", tags.GetTags)
 	tagsGroup.Get("/:id", tags.GetTag)
 
-	tagsGroupSecured := app.Group("/v1/tags", SessionMiddleware)
+	tagsGroupSecured := app.Group("/v1/tags", SessionMiddleware, AdminMiddleware)
 	tagsGroupSecured.Post("", tags.CreateTag)
 	tagsGroupSecured.Patch("/:id", tags.UpdateTag)
 	tagsGroupSecured.Delete("/:id", tags.DeleteTag)
@@ -79,7 +79,7 @@ func Setup(app *fiber.App) {
 	projectsGroup.Get("/:slug", projects.GetProject)
 
 	projectsGroupSecured := app.Group("/v1/projects", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
-	projectsGroupSecured.Post("", projects.CreateProject(store))
+	projectsGroupSecured.Post("", projects.CreateProject)
 	projectsGroupSecured.Get("/respond/:id", projects.RespondToProject(store))
 	projectsGroupSecured.Patch("/:id", projects.UpdateProject)
 	projectsGroupSecured.Delete("/:id", projects.DeleteProject(store))
@@ -95,14 +95,18 @@ func Setup(app *fiber.App) {
 	researchesGroupSecured.Delete("/:id", researches.DeleteResearch)
 
 	// User routes
-	usersGroup := app.Group("/v1/users")
+	usersGroup := app.Group("/v1/users", AdminMiddleware, AuthorMiddleware)
 	usersGroup.Get("", users.GetUsers)
 	usersGroup.Get("/:id", users.GetUser)
-
-	// usersGroupSecured := app.Group("/v1/users", SessionMiddleware)
 	usersGroup.Post("", users.CreateUser)
-	usersGroup.Patch("/:id", users.UpdateUser)
-	usersGroup.Delete("/:id", users.DeleteUser)
+
+	usersGroupSecured := app.Group("/v1/users", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
+	usersGroupSecured.Patch("/:id", users.UpdateUser)
+	usersGroupSecured.Delete("/:id", users.DeleteUser)
+
+	usersGroupSecured.Get("contacts/:id", users.RequestContacts)
+	usersGroupSecured.Get("approve/:id", users.ApproveContactsRequest)
+	usersGroupSecured.Get("reject/:id", users.RejectContactsRequest)
 
 	app.Listen(":8080")
 }

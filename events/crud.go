@@ -154,7 +154,7 @@ func CreateEvent(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving created event: " + err.Error())
 	}
 
-	// TODO: pending by default, but Admin need to set any
+	// TODO: POST: pending by default, but Admin need to set any
 	// TODO: user can creare reason_of_reject, remove access
 	// TODO: need ability for user can change ModerationStatus
 

@@ -50,7 +50,7 @@ func GetResearches(c *fiber.Ctx) error {
 	if len(sort) != 0 {
 		findOptions.SetSort(sort)
 	}
-	// TODO: User can't get pending | rejected entity
+	// TODO: GET: User can't get pending | rejected entity
 
 	// Query the database and get the cursor
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)

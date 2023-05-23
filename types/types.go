@@ -9,10 +9,14 @@ import (
 )
 
 type Translations struct {
-	En string `bson:"en" json:"en" validate:"required_without_all=Ru Hy"`
-	Ru string `bson:"ru" json:"ru" validate:"required_without_all=En Hy"`
-	Hy string `bson:"hy" json:"hy" validate:"required_without_all=En Ru"`
+	En string `bson:"en" json:"en"`
+	Ru string `bson:"ru" json:"ru"`
+	Hy string `bson:"hy" json:"hy"`
 }
+
+// validate:"required_without_all=Ru Hy"
+// validate:"required_without_all=En Hy"
+// validate:"required_without_all=En Ru"
 
 type Role string
 
@@ -22,39 +26,54 @@ const (
 )
 
 type UserCredentials struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	Email    string `json:"email,omitempty" validate:"required,email"`
+	Password string `json:"password,omitempty" validate:"required" bson:"password"`
 }
 
+// Password string `json:"password" validate:"required"`
 type Contacts struct {
-	Email     string `json:"email"`
-	Phone     string `json:"phone"`
-	Facebook  string `json:"facebook"`
-	Instagram string `json:"instagram"`
-	Linkedin  string `json:"linkedin"`
+	Phone     string `json:"phone,omitempty"`
+	Facebook  string `json:"facebook,omitempty"`
+	Instagram string `json:"instagram,omitempty"`
+	Linkedin  string `json:"linkedin,omitempty"`
+}
+
+type ContactsRequest struct {
+	IncomingContactRequests   map[primitive.ObjectID]bool `json:"incoming_contact_requests" bson:"incoming_contact_requests"`
+	OutgoingContactRequests   map[primitive.ObjectID]bool `json:"outgoing_contact_requests" bson:"outgoing_contact_requests"`
+	ConfirmedContactsRequests map[primitive.ObjectID]bool `json:"confirmed_contacts_requests" bson:"confirmed_contacts_requests"`
+	BlockedUsers              map[primitive.ObjectID]bool `json:"blocked_users" bson:"blocked_users"`
+}
+
+// TODO: do I need projects history?
+type UserProjects struct {
+	ProjectsApplications  map[primitive.ObjectID]bool `json:"projects_applications" bson:"projects_applications"`
+	ConfirmedApplications map[primitive.ObjectID]bool `json:"confirmed_applications" bson:"confirmed_applications"`
+	RejectedApplicants    map[primitive.ObjectID]bool `json:"rejected_applicants"omitempty" bson:"rejected_applicants"`
+	CreatedProjects       map[primitive.ObjectID]bool `json:"created_projects" bson:"created_projects"`
 }
 
 type UserBody struct {
-	ID                        primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
-	Email                     string               `json:"email" validate:"required,email"`
-	Password                  string               `json:"password" validate:"required"`
-	Avatar                    string               `json:"avatar"`
-	FullName                  Translations         `json:"full_name"`
-	Description               string               `json:"description"`
-	Contacts                  []string             `json:"contacts"`
-	Location                  primitive.ObjectID   `json:"location,omitempty" bson:"location,omitempty"`
-	Role                      Role                 `json:"role"`
-	Job                       string               `json:"job"`
-	Tags                      []primitive.ObjectID `json:"tags"`
-	IncomingContactRequests   []primitive.ObjectID `json:"incoming_contact_requests,omitempty" bson:"incoming_contact_requests,omitempty"`
-	OutgoingContactRequests   []primitive.ObjectID `json:"outgoing_contact_requests,omitempty" bson:"outgoing_contact_requests,omitempty"`
-	ConfirmedContactsRequests []primitive.ObjectID `json:"confirmed_contacts_requests,omitempty" bson:"confirmed_contacts_requests,omitempty"`
-	BlockedUsers              []primitive.ObjectID `json:"blocked_users,omitempty" bson:"blocked_users,omitempty"`
-	ProjectsApplications      []primitive.ObjectID `json:"projects_applications,omitempty" bson:"projects_applications,omitempty"`
-	ConfirmedApplications     []primitive.ObjectID `json:"confirmed_applications,omitempty" bson:"confirmed_applications,omitempty"`
-	ProjectsHistory           []primitive.ObjectID `json:"projects_history,omitempty" bson:"projects_history,omitempty"`
-	CreatedProjects           []primitive.ObjectID `json:"created_projects,omitempty" bson:"created_projects,omitempty"`
-	Notifications             []primitive.ObjectID `json:"notification,omitempty" bson:"notification,omitempty"`
+	Avatar          string               `json:"avatar"`
+	FullName        Translations         `json:"full_name,omitempty" bson:"full_name,omitempty"`
+	Description     string               `json:"description"`
+	Contacts        Contacts             `json:"contacts,omitempty"`
+	Location        primitive.ObjectID   `json:"location,omitempty" bson:"location,omitempty"`
+	Role            *Role                `json:"role,omitempty"`
+	Job             string               `json:"job"`
+	Language        string               `json:"language"`
+	Tags            []primitive.ObjectID `json:"tags"`
+	Notifications   []primitive.ObjectID `json:"notification,omitempty" bson:"notification,omitempty"`
+	Events          []primitive.ObjectID `json:"events,omitempty" bson:"events,omitempty"`
+	Researches      []primitive.ObjectID `json:"researches,omitempty" bson:"researches,omitempty"`
+	ContactsRequest `json:"contacts_request,omitempty" bson:"contacts_request"`
+	UserProjects    `json:"user_projects,omitempty" bson:"user_projects"`
+}
+
+type UserTest struct {
+	ID              primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	UserCredentials `bson:"user_credentials"`
+	UserBody        `bson:"user_body"`
 }
 
 // TODO: add Events, ... [] to user for admin
@@ -63,29 +82,6 @@ type UserBody struct {
 // TODO: how to add required for other fields after registration?
 // TODO: return only specialist if user is not admin
 // TODO: add default language
-type User struct {
-	ID                        primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
-	Email                     string               `json:"email" validate:"required,email"`
-	HashedPassword            []byte               `json:"-" validate:"required"`
-	Avatar                    string               `json:"avatar"`
-	FullName                  Translations         `json:"full_name" bson:"full_name"`
-	Description               string               `json:"description"`
-	Language                  string               `json:"language"`
-	Contacts                  []string             `json:"contacts"`
-	Location                  primitive.ObjectID   `json:"location,omitempty" bson:"location,omitempty"`
-	Role                      Role                 `json:"role" validate:"required,oneof=admin specialist"`
-	Job                       string               `json:"job"`
-	Tags                      []primitive.ObjectID `json:"tags"`
-	IncomingContactRequests   []primitive.ObjectID `json:"incoming_contact_requests,omitempty" bson:"incoming_contact_requests,omitempty"`
-	OutgoingContactRequests   []primitive.ObjectID `json:"outgoing_contact_requests,omitempty" bson:"outgoing_contact_requests,omitempty"`
-	ConfirmedContactsRequests []primitive.ObjectID `json:"confirmed_contacts_requests,omitempty" bson:"confirmed_contacts_requests,omitempty"`
-	BlockedUsers              []primitive.ObjectID `json:"blocked_users,omitempty" bson:"blocked_users,omitempty"`
-	ProjectsApplications      []primitive.ObjectID `json:"projects_applications,omitempty" bson:"projects_applications,omitempty"`
-	ConfirmedApplications     []primitive.ObjectID `json:"confirmed_applications,omitempty" bson:"confirmed_applications,omitempty"`
-	ProjectsHistory           []primitive.ObjectID `json:"projects_history,omitempty" bson:"projects_history,omitempty"`
-	CreatedProjects           []primitive.ObjectID `json:"created_projects,omitempty" bson:"created_projects,omitempty"`
-	Notifications             []primitive.ObjectID `json:"notification,omitempty" bson:"notification,omitempty"`
-}
 
 type NotificationStatus int
 
