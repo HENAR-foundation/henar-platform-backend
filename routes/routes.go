@@ -5,6 +5,7 @@ import (
 	"henar-backend/locations"
 	"henar-backend/projects"
 	"henar-backend/researches"
+	"henar-backend/static"
 	"henar-backend/statistics"
 	"henar-backend/tags"
 	"henar-backend/users"
@@ -27,10 +28,11 @@ func Setup(app *fiber.App) {
 		Expiration:     time.Hour * 3000,
 	})
 
-	app.Post("/auth/signup", SignUp)
-	app.Post("/auth/signin", SignIn)
-	app.Get("/auth/signout", SignOut)
-	app.Get("/auth/check", Check)
+	authGroup := app.Group("/v1/auth")
+	authGroup.Post("/signup", SignUp)
+	authGroup.Post("/signin", SignIn)
+	authGroup.Get("/signout", SignOut)
+	authGroup.Get("/check", Check)
 
 	// Locations routes
 	locationsGroup := app.Group("/v1/locations")
@@ -107,6 +109,9 @@ func Setup(app *fiber.App) {
 	usersGroupSecured.Get("contacts/:id", users.RequestContacts)
 	usersGroupSecured.Get("approve/:id", users.ApproveContactsRequest)
 	usersGroupSecured.Get("reject/:id", users.RejectContactsRequest)
+
+	staticGroup := app.Group("/v1/files")
+	staticGroup.Post("/upload", static.UploadFile)
 
 	app.Listen(":8080")
 }

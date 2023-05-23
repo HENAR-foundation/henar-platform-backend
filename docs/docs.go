@@ -381,6 +381,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/files/upload": {
+            "post": {
+                "description": "Upload a static file to Henar DigitalOcean failopoika's and get the uri",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "files"
+                ],
+                "summary": "Upload file",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.FileResponce"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/locations": {
             "get": {
                 "description": "Retrieves all locations",
@@ -1914,6 +1946,14 @@ const docTemplate = `{
                 }
             }
         },
+        "types.FileResponce": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "types.Location": {
             "type": "object",
             "required": [
@@ -2358,6 +2398,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {
