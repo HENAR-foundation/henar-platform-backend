@@ -8,12 +8,6 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
-type Translations struct {
-	En string `bson:"en" json:"en"`
-	Ru string `bson:"ru" json:"ru"`
-	Hy string `bson:"hy" json:"hy"`
-}
-
 // validate:"required_without_all=Ru Hy"
 // validate:"required_without_all=En Hy"
 // validate:"required_without_all=En Ru"
