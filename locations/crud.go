@@ -170,6 +170,12 @@ func CreateLocation(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/locations/{id} [patch]
 func UpdateLocation(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	collection, _ := db.GetCollection("locations")
 
 	// Get the research ID from the URL path parameter
@@ -225,6 +231,12 @@ func UpdateLocation(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Error deleting research: <error message>"
 // @Router /v1/locations/{id} [delete]
 func DeleteLocation(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	collection, _ := db.GetCollection("locations")
 
 	// Get the research ID from the URL path parameter

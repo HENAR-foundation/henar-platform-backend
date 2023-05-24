@@ -44,9 +44,10 @@ func SignIn(c *fiber.Ctx) error {
 	}
 
 	collection, _ := db.GetCollection("users")
-	filter := bson.M{"email": uc.Email}
-	var user types.User
+	filter := bson.M{"user_credentials.email": uc.Email}
+	var user types.UserTest
 	err = collection.FindOne(context.TODO(), filter).Decode(&user)
+
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "wrong credentials",
@@ -54,8 +55,7 @@ func SignIn(c *fiber.Ctx) error {
 	}
 
 	// Comparing the password with the hash
-	err = bcrypt.CompareHashAndPassword(user.HashedPassword, []byte(uc.Password))
-
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(uc.Password))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "wrong credentials",
@@ -71,6 +71,7 @@ func SignIn(c *fiber.Ctx) error {
 
 	sess.Set(AUTH_KEY, true)
 	sess.Set(USER_ID, user.ID.Hex())
+	sess.Set(USER_ROLE, string(*user.Role))
 
 	sessErr = sess.Save()
 	if sessErr != nil {
