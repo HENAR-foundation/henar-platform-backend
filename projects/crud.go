@@ -408,50 +408,81 @@ func DeleteProject(store *session.Store) func(c *fiber.Ctx) error {
 // TODO: add RejectApplicant
 // TODO: reject applicants in this fn
 // change moderation status and reason of reject in update?
-func RespondToProject(store *session.Store) func(c *fiber.Ctx) error {
-	return func(c *fiber.Ctx) error {
-		collection, err := db.GetCollection("projects")
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
-		}
-
-		sess, err := store.Get(c)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"message": "not authorized",
-			})
-		}
-
-		userId := sess.Get("user_id").(string)
-		userObjId, err := primitive.ObjectIDFromHex(userId)
-		if err != nil {
-			return c.Status(http.StatusBadRequest).SendString("Invalid ID")
-		}
-
-		// Get the project ID from the URL path parameter
-		id := c.Params("id")
-		objId, err := primitive.ObjectIDFromHex(id)
-		if err != nil {
-			return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
-		}
-
-		// Update the project document in MongoDB
-		filter := bson.M{"_id": objId}
-		update := bson.M{"$addToSet": bson.M{"applicants": userObjId}}
-		_, err = collection.UpdateOne(context.TODO(), filter, update)
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
-		}
-
-		// Retrieve the updated project from MongoDB
-		filter = bson.M{"_id": objId}
-		var updatedProject types.Project
-		err = collection.FindOne(context.TODO(), filter).Decode(&updatedProject)
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
-		}
-
-		// Set the response headers and write the response body
-		return c.Status(http.StatusOK).JSON(updatedProject)
+func RespondToProject(c *fiber.Ctx) error {
+	collection, err := db.GetCollection("projects")
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
+
+	userId := c.Locals("user_id").(string)
+	userObjId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+
+	// Get the project ID from the URL path parameter
+	id := c.Params("id")
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
+	}
+
+	// Update the project document in MongoDB
+	filter := bson.M{"_id": objId}
+	update := bson.M{"$addToSet": bson.M{"applicants": userObjId}}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
+	}
+
+	// Retrieve the updated project from MongoDB
+	filter = bson.M{"_id": objId}
+	var updatedProject types.Project
+	err = collection.FindOne(context.TODO(), filter).Decode(&updatedProject)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
+	}
+
+	// Set the response headers and write the response body
+	return c.Status(http.StatusOK).JSON(updatedProject)
+}
+
+// TODO: respond/cancel delete applicants for public request
+func CancelProjectApplication(c *fiber.Ctx) error {
+	collection, err := db.GetCollection("projects")
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
+	}
+
+	userId := c.Locals("user_id").(string)
+	userObjId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+
+	// Get the project ID from the URL path parameter
+	id := c.Params("id")
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
+	}
+
+	// Update the project document in MongoDB
+	filter := bson.M{"_id": objId}
+	update := bson.M{"$pull": bson.M{"applicants": userObjId}}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
+	}
+
+	// Retrieve the updated project from MongoDB
+	filter = bson.M{"_id": objId}
+	var updatedProject types.Project
+	err = collection.FindOne(context.TODO(), filter).Decode(&updatedProject)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
+	}
+
+	// Set the response headers and write the response body
+	return c.Status(http.StatusOK).JSON(updatedProject)
 }
