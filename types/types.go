@@ -304,10 +304,14 @@ type Tag struct {
 	Title Translations       `json:"title"`
 }
 
+// validate:"required_without_all=Ru Hy
+// validate:"required_without_all=En Hy
+// validate:"required_without_all=En Ru
+
 type Translations struct {
-	En string `bson:"en" json:"en" validate:"required_without_all=Ru Hy"`
-	Ru string `bson:"ru" json:"ru" validate:"required_without_all=En Hy"`
-	Hy string `bson:"hy" json:"hy" validate:"required_without_all=En Ru"`
+	En string `bson:"en" json:"en"`
+	Ru string `bson:"ru" json:"ru"`
+	Hy string `bson:"hy" json:"hy"`
 }
 
 type FileResponce struct {
