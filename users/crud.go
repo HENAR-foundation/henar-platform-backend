@@ -32,7 +32,6 @@ func CreateUser(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
-	fmt.Println(uc.Email)
 
 	// Validate the required fields
 	v := validator.New()
