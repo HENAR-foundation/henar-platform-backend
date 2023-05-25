@@ -239,25 +239,25 @@ func ValidateEnum(fl validator.FieldLevel) bool {
 }
 
 // TODO: how_to_help_the_project can has many values? can be empty?
-// TODO: author can update project after reject
+// TODO: author can update project moderation_status after reject
 type Project struct {
-	ID                   primitive.ObjectID    `json:"_id,omitempty" bson:"_id,omitempty"`
-	Slug                 *string               `json:"slug, omitempty" bson:"slug,omitempty"`
-	Covers               []string              `json:"covers,omitempty" bson:"covers,omitempty"`
-	CreatedBy            primitive.ObjectID    `json:"created_by,omitempty" bson:"created_by,omitempty"`
-	Title                Translations          `json:"title"`
-	Description          Translations          `json:"description"`
-	Objective            Translations          `json:"objective"`
-	WhoIsNeeded          Translations          `json:"who_is_needed" bson:"who_is_needed"`
-	Tags                 []primitive.ObjectID  `json:"tags" validate:"required" bson:"tags"`
-	Views                *int64                `json:"views" bson:"views,omitempty"`
-	HowToHelpTheProject  HowToHelpTheProject   `json:"how_to_help_the_project" bson:"how_to_help_the_project,omitempty"`
-	ProjectStatus        ProjectStatus         `json:"project_status" bson:"project_status,omitempty"`
-	ModerationStatus     *ModerationStatus     `json:"moderation_status,omitempty" bson:"moderation_status,omitempty"`
-	ReasonOfReject       *string               `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
-	Applicants           *[]primitive.ObjectID `json:"applicants,omitempty" bson:"applicants,omitempty"`
-	SuccessfulApplicants *[]primitive.ObjectID `json:"successful_applicants,omitempty" bson:"successful_applicants,omitempty"`
-	RejectedApplicants   *[]primitive.ObjectID `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
+	ID                   primitive.ObjectID           `json:"_id,omitempty" bson:"_id,omitempty"`
+	Slug                 *string                      `json:"slug, omitempty" bson:"slug,omitempty"`
+	Covers               []string                     `json:"covers,omitempty" bson:"covers,omitempty"`
+	CreatedBy            primitive.ObjectID           `json:"created_by,omitempty" bson:"created_by,omitempty"`
+	Title                Translations                 `json:"title"`
+	Description          Translations                 `json:"description"`
+	Objective            Translations                 `json:"objective"`
+	WhoIsNeeded          Translations                 `json:"who_is_needed" bson:"who_is_needed"`
+	Tags                 []primitive.ObjectID         `json:"tags" validate:"required" bson:"tags"`
+	Views                *int64                       `json:"views" bson:"views,omitempty"`
+	HowToHelpTheProject  map[HowToHelpTheProject]bool `json:"how_to_help_the_project" bson:"how_to_help_the_project,omitempty"`
+	ProjectStatus        ProjectStatus                `json:"project_status" bson:"project_status,omitempty"`
+	ModerationStatus     *ModerationStatus            `json:"moderation_status,omitempty" bson:"moderation_status,omitempty"`
+	ReasonOfReject       *string                      `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
+	Applicants           *[]primitive.ObjectID        `json:"applicants,omitempty" bson:"applicants,omitempty"`
+	SuccessfulApplicants *[]primitive.ObjectID        `json:"successful_applicants,omitempty" bson:"successful_applicants,omitempty"`
+	RejectedApplicants   *[]primitive.ObjectID        `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
 }
 
 // TODO: handler for reject applicant

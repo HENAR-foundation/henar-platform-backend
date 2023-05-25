@@ -82,7 +82,8 @@ func Setup(app *fiber.App) {
 
 	projectsGroupSecured := app.Group("/v1/projects", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
 	projectsGroupSecured.Post("", projects.CreateProject)
-	projectsGroupSecured.Get("/respond/:id", projects.RespondToProject(store))
+	projectsGroupSecured.Get("/respond/:id", projects.RespondToProject)
+	projectsGroupSecured.Get("/cancel/:id", projects.CancelProjectApplication)
 	projectsGroupSecured.Patch("/:id", projects.UpdateProject)
 	projectsGroupSecured.Delete("/:id", projects.DeleteProject(store))
 
