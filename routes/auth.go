@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -168,22 +169,24 @@ func SignOut(c *fiber.Ctx) error {
 }
 
 func Check(c *fiber.Ctx) error {
-	sess, err := store.Get(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "not authorized",
-		})
-	}
-
-	auth := sess.Get(AUTH_KEY)
-
-	if auth != nil {
+	userId := c.Locals("user_id")
+	if userId == nil {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"message": "authorized",
-		})
-	} else {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "not authorized",
 		})
 	}
+	objId, _ := primitive.ObjectIDFromHex(userId.(string))
+
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{"_id": objId}
+	var user types.UserTest
+	err := collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	return c.Status(http.StatusOK).JSON(user)
 }
