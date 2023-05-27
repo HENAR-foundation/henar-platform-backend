@@ -32,7 +32,7 @@ func Setup(app *fiber.App) {
 	authGroup.Post("/signup", SignUp)
 	authGroup.Post("/signin", SignIn)
 	authGroup.Get("/signout", SignOut)
-	authGroup.Get("/check", Check)
+	authGroup.Get("/check", AuthorMiddleware, Check)
 
 	// Locations routes
 	locationsGroup := app.Group("/v1/locations")
