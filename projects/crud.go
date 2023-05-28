@@ -94,6 +94,8 @@ func GetProject(c *fiber.Ctx) error {
 // @Param title query string false "Substring to match in the title"
 // @Param tags query string false "Comma-separated list of tag IDs to filter by"
 // @Param location query string false "Location ID to filter by"
+// @Param status query string false "Project statuses"
+// @Param help query string false "How to help the project"
 func GetProjects(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("projects")
 
@@ -184,7 +186,7 @@ func CreateProject(c *fiber.Ctx) error {
 	}
 
 	userFilter := bson.M{"_id": userObjId}
-	var user types.UserTest
+	var user types.User
 	err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -369,7 +371,7 @@ func DeleteProject(store *session.Store) func(c *fiber.Ctx) error {
 		// TODO: delete for all applicants
 		usersCollection, _ := db.GetCollection("users")
 		userFilter := bson.M{"_id": userObjId}
-		var user types.UserTest
+		var user types.User
 		err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
@@ -400,14 +402,17 @@ func DeleteProject(store *session.Store) func(c *fiber.Ctx) error {
 	}
 }
 
-// get user id from session
-// update projects applicants
-// handle errors
-// return response
-// TODO: add docs
-// TODO: add RejectApplicant
-// TODO: reject applicants in this fn
-// change moderation status and reason of reject in update?
+// RespondToProject responds to a project by adding the current user as an applicant.
+// @Summary Respond to a project
+// @Description Adds the current user as an applicant to the specified project.
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} types.Project
+// @Failure 400 {string} string "Invalid ID or project ID"
+// @Failure 500 {string} string "Error connecting to database or updating/retrieving project"
+// @Router /projects/{id}/respond [get]
 func RespondToProject(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("projects")
 	if err != nil {
@@ -448,6 +453,18 @@ func RespondToProject(c *fiber.Ctx) error {
 }
 
 // TODO: respond/cancel delete applicants for public request
+
+// CancelProjectApplication cancels the user's application for a project.
+// @Summary Cancel project application
+// @Description Cancels the user's application for the specified project.
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} types.Project
+// @Failure 400 {string} string "Invalid ID or project ID"
+// @Failure 500 {string} string "Error connecting to database or updating/retrieving project"
+// @Router /projects/{id}/cancel [get]
 func CancelProjectApplication(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("projects")
 	if err != nil {

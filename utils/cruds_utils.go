@@ -95,6 +95,7 @@ func GetFilter(c *fiber.Ctx) (bson.M, error) {
 		filter["project_status"] = primitive.Regex{Pattern: projectStatus, Options: "i"}
 	}
 
+	// TODO: check filter for new array data type
 	howToHelpTheProject := c.Query("help")
 	if howToHelpTheProject != "" {
 		filter["how_to_help_the_project"] = primitive.Regex{Pattern: howToHelpTheProject, Options: "i"}

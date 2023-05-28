@@ -1,12 +1,42 @@
 basePath: /
 definitions:
+  types.Contacts:
+    properties:
+      facebook:
+        type: string
+      instagram:
+        type: string
+      linkedin:
+        type: string
+      phone:
+        type: string
+    type: object
+  types.ContactsRequest:
+    properties:
+      blocked_users:
+        additionalProperties:
+          type: boolean
+        type: object
+      confirmed_contacts_requests:
+        additionalProperties:
+          type: boolean
+        type: object
+      incoming_contact_requests:
+        additionalProperties:
+          type: boolean
+        type: object
+      outgoing_contact_requests:
+        additionalProperties:
+          type: boolean
+        type: object
+    type: object
   types.Event:
     properties:
       _id:
         type: string
-      author:
-        type: string
       cover:
+        type: string
+      created_by:
         type: string
       date:
         type: string
@@ -29,9 +59,7 @@ definitions:
       title:
         $ref: '#/definitions/types.Translations'
     required:
-    - author
     - date
-    - location
     - tags
     type: object
   types.FileResponce:
@@ -65,13 +93,13 @@ definitions:
     type: object
   types.ModerationStatus:
     enum:
-    - 0
-    - 1
-    - 2
-    type: integer
+    - pending
+    - approved
+    - rejected
+    type: string
     x-enum-varnames:
-    - ForRevision
-    - Accepted
+    - Pending
+    - Approved
     - Rejected
   types.Project:
     properties:
@@ -81,18 +109,24 @@ definitions:
         items:
           type: string
         type: array
-      author:
-        type: string
       covers:
         items:
           type: string
         type: array
+      created_by:
+        type: string
       description:
         $ref: '#/definitions/types.Translations'
+      how_to_help_the_project:
+        additionalProperties:
+          type: boolean
+        type: object
       moderation_status:
         $ref: '#/definitions/types.ModerationStatus'
       objective:
         $ref: '#/definitions/types.Translations'
+      project_status:
+        $ref: '#/definitions/types.ProjectStatus'
       reason_of_reject:
         type: string
       rejected_applicants:
@@ -116,14 +150,27 @@ definitions:
       who_is_needed:
         $ref: '#/definitions/types.Translations'
     required:
-    - author
     - tags
     type: object
+  types.ProjectStatus:
+    enum:
+    - ideation
+    - implementation
+    - launchAndExecution
+    - perfomanceAndControl
+    - closed
+    type: string
+    x-enum-varnames:
+    - Ideation
+    - Implementation
+    - LaunchAndExecution
+    - PerfomanceAndControl
+    - Closed
   types.Research:
     properties:
       _id:
         type: string
-      author:
+      created_by:
         type: string
       description:
         $ref: '#/definitions/types.Translations'
@@ -142,7 +189,6 @@ definitions:
       title:
         $ref: '#/definitions/types.Translations'
     required:
-    - author
     - link
     - tags
     type: object
@@ -201,120 +247,33 @@ definitions:
         type: string
       avatar:
         type: string
-      blocked_users:
-        items:
-          type: string
-        type: array
-      confirmed_applications:
-        items:
-          type: string
-        type: array
-      confirmed_contacts_requests:
-        items:
-          type: string
-        type: array
       contacts:
-        items:
-          type: string
-        type: array
-      created_projects:
-        items:
-          type: string
-        type: array
+        $ref: '#/definitions/types.Contacts'
+      contacts_request:
+        $ref: '#/definitions/types.ContactsRequest'
       description:
         type: string
       email:
         type: string
-      full_name:
-        type: string
-      incoming_contact_requests:
+      events:
         items:
           type: string
         type: array
+      full_name:
+        $ref: '#/definitions/types.Translations'
       job:
+        type: string
+      language:
         type: string
       location:
         type: string
       notification:
-        items:
-          type: string
-        type: array
-      outgoing_contact_requests:
-        items:
-          type: string
-        type: array
-      projects_applications:
-        items:
-          type: string
-        type: array
-      projects_history:
-        items:
-          type: string
-        type: array
-      role:
-        $ref: '#/definitions/types.Role'
-      tags:
-        items:
-          type: string
-        type: array
-    required:
-    - email
-    type: object
-  types.UserBody:
-    properties:
-      _id:
-        type: string
-      avatar:
-        type: string
-      blocked_users:
-        items:
-          type: string
-        type: array
-      confirmed_applications:
-        items:
-          type: string
-        type: array
-      confirmed_contacts_requests:
-        items:
-          type: string
-        type: array
-      contacts:
-        items:
-          type: string
-        type: array
-      created_projects:
-        items:
-          type: string
-        type: array
-      description:
-        type: string
-      email:
-        type: string
-      full_name:
-        type: string
-      incoming_contact_requests:
-        items:
-          type: string
-        type: array
-      job:
-        type: string
-      location:
-        type: string
-      notification:
-        items:
-          type: string
-        type: array
-      outgoing_contact_requests:
         items:
           type: string
         type: array
       password:
         type: string
-      projects_applications:
-        items:
-          type: string
-        type: array
-      projects_history:
+      researches:
         items:
           type: string
         type: array
@@ -324,9 +283,69 @@ definitions:
         items:
           type: string
         type: array
+      user_projects:
+        $ref: '#/definitions/types.UserProjects'
     required:
     - email
     - password
+    type: object
+  types.UserBody:
+    properties:
+      avatar:
+        type: string
+      contacts:
+        $ref: '#/definitions/types.Contacts'
+      contacts_request:
+        $ref: '#/definitions/types.ContactsRequest'
+      description:
+        type: string
+      events:
+        items:
+          type: string
+        type: array
+      full_name:
+        $ref: '#/definitions/types.Translations'
+      job:
+        type: string
+      language:
+        type: string
+      location:
+        type: string
+      notification:
+        items:
+          type: string
+        type: array
+      researches:
+        items:
+          type: string
+        type: array
+      role:
+        $ref: '#/definitions/types.Role'
+      tags:
+        items:
+          type: string
+        type: array
+      user_projects:
+        $ref: '#/definitions/types.UserProjects'
+    type: object
+  types.UserProjects:
+    properties:
+      confirmed_applications:
+        additionalProperties:
+          type: boolean
+        type: object
+      created_projects:
+        additionalProperties:
+          type: boolean
+        type: object
+      projects_applications:
+        additionalProperties:
+          type: boolean
+        type: object
+      rejected_applicants:
+        additionalProperties:
+          type: boolean
+        type: object
     type: object
 host: localhost:8080
 info:
@@ -334,6 +353,64 @@ info:
   title: Henar
   version: "1.0"
 paths:
+  /projects/{id}/cancel:
+    get:
+      consumes:
+      - application/json
+      description: Cancels the user's application for the specified project.
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Project'
+        "400":
+          description: Invalid ID or project ID
+          schema:
+            type: string
+        "500":
+          description: Error connecting to database or updating/retrieving project
+          schema:
+            type: string
+      summary: Cancel project application
+      tags:
+      - projects
+  /projects/{id}/respond:
+    get:
+      consumes:
+      - application/json
+      description: Adds the current user as an applicant to the specified project.
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Project'
+        "400":
+          description: Invalid ID or project ID
+          schema:
+            type: string
+        "500":
+          description: Error connecting to database or updating/retrieving project
+          schema:
+            type: string
+      summary: Respond to a project
+      tags:
+      - projects
   /users:
     post:
       consumes:
@@ -394,6 +471,109 @@ paths:
           schema:
             type: string
       summary: Update an existing user
+      tags:
+      - users
+  /users/{id}/approve:
+    get:
+      consumes:
+      - application/json
+      description: Approves a contact request from the specified user.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Done
+          schema:
+            type: string
+        "400":
+          description: Invalid project ID or user ID
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Error connecting to database or updating user
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Approve contact request
+      tags:
+      - users
+  /users/{id}/reject:
+    get:
+      consumes:
+      - application/json
+      description: Rejects a contact request from the specified user.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Done
+          schema:
+            type: string
+        "400":
+          description: Invalid project ID or user ID
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Error connecting to database or updating user
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Reject contact request
+      tags:
+      - users
+  /users/{id}/request:
+    get:
+      consumes:
+      - application/json
+      description: Sends a contact request to the specified user.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Contact request added successfully.
+          schema:
+            type: string
+        "400":
+          description: Invalid project ID or user ID
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Error connecting to database or updating user
+          schema:
+            type: string
+      summary: Send contact request
       tags:
       - users
   /v1/events:
@@ -590,8 +770,8 @@ paths:
             items:
               $ref: '#/definitions/types.FileResponce'
             type: array
-        "500":
-          description: Internal Server Error
+        "400":
+          description: error reading file
           schema:
             type: string
       summary: Upload file
@@ -821,6 +1001,14 @@ paths:
       - description: Location ID to filter by
         in: query
         name: location
+        type: string
+      - description: Project statuses
+        in: query
+        name: status
+        type: string
+      - description: How to help the project
+        in: query
+        name: help
         type: string
       produces:
       - application/json

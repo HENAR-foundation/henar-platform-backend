@@ -27,7 +27,7 @@ import (
 // @Router /users [post]
 func CreateUser(c *fiber.Ctx) error {
 	// Parse request body into user struct
-	var uc types.UserTest
+	var uc types.User
 	err := c.BodyParser(&uc)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
@@ -50,7 +50,7 @@ func CreateUser(c *fiber.Ctx) error {
 	}
 
 	specialist := types.Specialist
-	user := types.UserTest{
+	user := types.User{
 		UserCredentials: types.UserCredentials{
 			Email:    uc.Email,
 			Password: string(Password),
@@ -76,7 +76,7 @@ func CreateUser(c *fiber.Ctx) error {
 	// Check if the email address is already in use
 	collection, _ := db.GetCollection("users")
 	filter := bson.M{"user_credentials.email": user.UserCredentials.Email}
-	var existingUser types.UserTest
+	var existingUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&existingUser)
 	if err == nil {
 		return fmt.Errorf("Email address already in use")
@@ -93,7 +93,7 @@ func CreateUser(c *fiber.Ctx) error {
 
 	// Retrieve the updated user from MongoDB
 	filter = bson.M{"_id": objId}
-	var createdUser types.UserTest
+	var createdUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdUser)
 	if err != nil {
 		return fmt.Errorf("Error retrieving created user: ", err)
@@ -117,7 +117,7 @@ func CreateUser(c *fiber.Ctx) error {
 // @Router /users/{id} [patch]
 func UpdateUser(c *fiber.Ctx) error {
 	// Parse request body into user struct
-	var updateBody types.UserTest
+	var updateBody types.User
 	err := c.BodyParser(&updateBody)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
@@ -144,13 +144,13 @@ func UpdateUser(c *fiber.Ctx) error {
 	if err != nil {
 		return fmt.Errorf("Error hashing password: %w", err)
 	}
-	// var user types.UserTest
+	// var user types.User
 	updateBody.Password = string(Password)
 
 	// Update the user document in MongoDB
 	collection, _ := db.GetCollection("users")
 	filter := bson.M{"user_credentials.email": updateBody.Email}
-	var existingUser types.UserTest
+	var existingUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&existingUser)
 	if existingUser.ID != objId {
 		if err == nil {
@@ -181,7 +181,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	// Retrieve the updated user from MongoDB
-	var updatedUser types.UserTest
+	var updatedUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedUser)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated user: " + err.Error())
@@ -214,7 +214,7 @@ func GetUser(c *fiber.Ctx) error {
 	// Retrieve the user from MongoDB
 	collection, _ := db.GetCollection("users")
 	filter := bson.M{"_id": objId}
-	var user types.UserTest
+	var user types.User
 	err := collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -321,9 +321,9 @@ func GetUsers(c *fiber.Ctx) error {
 	defer cur.Close(context.Background())
 
 	// Convert the list of users to a slice and set the response headers and body
-	var users []types.UserTest
+	var users []types.User
 	for cur.Next(context.Background()) {
-		var user types.UserTest
+		var user types.User
 		err := cur.Decode(&user)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).SendString("Error decoding user: " + err.Error())
@@ -386,6 +386,18 @@ func DeleteUser(c *fiber.Ctx) error {
 	return c.SendString("User deleted successfully")
 }
 
+// RequestContacts sends a contact request to another user.
+// @Summary Send contact request
+// @Description Sends a contact request to the specified user.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {string} string "Contact request added successfully."
+// @Failure 400 {string} string "Invalid project ID or user ID"
+// @Failure 404 {string} string "User not found"
+// @Failure 500 {string} string "Error connecting to database or updating user"
+// @Router /users/{id}/request [get]
 func RequestContacts(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("users")
 	if err != nil {
@@ -405,7 +417,7 @@ func RequestContacts(c *fiber.Ctx) error {
 
 	// get requester
 	filter := bson.M{"_id": requesterId}
-	var requester types.UserTest
+	var requester types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&requester)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -416,7 +428,7 @@ func RequestContacts(c *fiber.Ctx) error {
 
 	// get approver
 	filter = bson.M{"_id": approverId}
-	var approver types.UserTest
+	var approver types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&approver)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -456,6 +468,19 @@ func RequestContacts(c *fiber.Ctx) error {
 	return c.SendString(msg)
 }
 
+// ApproveContactsRequest approves a contact request from another user.
+// @Summary Approve contact request
+// @Description Approves a contact request from the specified user.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Security ApiKeyAuth
+// @Success 200 {string} string "Done"
+// @Failure 400 {string} string "Invalid project ID or user ID"
+// @Failure 404 {string} string "User not found"
+// @Failure 500 {string} string "Error connecting to database or updating user"
+// @Router /users/{id}/approve [get]
 func ApproveContactsRequest(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("users")
 	if err != nil {
@@ -475,7 +500,7 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 
 	// get approver
 	filter := bson.M{"_id": userId}
-	var user types.UserTest
+	var user types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -483,19 +508,6 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 		}
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
-
-	// // get approver
-	// filter = bson.M{"_id": approverId}
-	// var approver types.UserTest
-	// err = collection.FindOne(context.TODO(), filter).Decode(&approver)
-	// if err != nil {
-	// 	if err == mongo.ErrNoDocuments {
-	// 		return c.Status(http.StatusNotFound).SendString("User not found")
-	// 	}
-	// 	return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
-	// }
-	fmt.Println(user.ContactsRequest.IncomingContactRequests)
-	fmt.Println(user.ContactsRequest.IncomingContactRequests[incomingRequestUserId])
 
 	if user.IncomingContactRequests[incomingRequestUserId] {
 		delete(user.IncomingContactRequests, incomingRequestUserId)
@@ -510,19 +522,22 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
-	// update requester
-	// filter = bson.M{"_id": userId}
-	// update = bson.M{"$set": user}
-	// _, err = collection.UpdateOne(context.TODO(), filter, update)
-	// if err != nil {
-	// 	return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
-	// }
-
-	// Set the response headers and write the response body
-	// return nil
 	return c.SendString("Done")
 }
 
+// RejectContactsRequest rejects a contact request from another user.
+// @Summary Reject contact request
+// @Description Rejects a contact request from the specified user.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Security ApiKeyAuth
+// @Success 200 {string} string "Done"
+// @Failure 400 {string} string "Invalid project ID or user ID"
+// @Failure 404 {string} string "User not found"
+// @Failure 500 {string} string "Error connecting to database or updating user"
+// @Router /users/{id}/reject [get]
 func RejectContactsRequest(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("users")
 	if err != nil {
@@ -542,7 +557,7 @@ func RejectContactsRequest(c *fiber.Ctx) error {
 
 	// get approver
 	filter := bson.M{"_id": userId}
-	var user types.UserTest
+	var user types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -550,19 +565,6 @@ func RejectContactsRequest(c *fiber.Ctx) error {
 		}
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
-
-	// // get approver
-	// filter = bson.M{"_id": approverId}
-	// var approver types.UserTest
-	// err = collection.FindOne(context.TODO(), filter).Decode(&approver)
-	// if err != nil {
-	// 	if err == mongo.ErrNoDocuments {
-	// 		return c.Status(http.StatusNotFound).SendString("User not found")
-	// 	}
-	// 	return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
-	// }
-	fmt.Println(user.ContactsRequest.IncomingContactRequests)
-	fmt.Println(user.ContactsRequest.IncomingContactRequests[incomingRequestUserId])
 
 	if user.IncomingContactRequests[incomingRequestUserId] {
 		delete(user.IncomingContactRequests, incomingRequestUserId)
@@ -577,15 +579,5 @@ func RejectContactsRequest(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
-	// update requester
-	// filter = bson.M{"_id": userId}
-	// update = bson.M{"$set": user}
-	// _, err = collection.UpdateOne(context.TODO(), filter, update)
-	// if err != nil {
-	// 	return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
-	// }
-
-	// Set the response headers and write the response body
-	// return nil
 	return c.SendString("Done")
 }

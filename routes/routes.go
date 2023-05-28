@@ -84,6 +84,7 @@ func Setup(app *fiber.App) {
 	projectsGroupSecured.Post("", projects.CreateProject)
 	projectsGroupSecured.Get("/respond/:id", projects.RespondToProject)
 	projectsGroupSecured.Get("/cancel/:id", projects.CancelProjectApplication)
+	// TODO: what if owner approve applicant?
 	projectsGroupSecured.Patch("/:id", projects.UpdateProject)
 	projectsGroupSecured.Delete("/:id", projects.DeleteProject(store))
 
@@ -107,7 +108,7 @@ func Setup(app *fiber.App) {
 	usersGroupSecured.Patch("/:id", users.UpdateUser)
 	usersGroupSecured.Delete("/:id", users.DeleteUser)
 
-	usersGroupSecured.Get("contacts/:id", users.RequestContacts)
+	usersGroupSecured.Get("request/:id", users.RequestContacts)
 	usersGroupSecured.Get("approve/:id", users.ApproveContactsRequest)
 	usersGroupSecured.Get("reject/:id", users.RejectContactsRequest)
 
