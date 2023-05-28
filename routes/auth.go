@@ -18,7 +18,7 @@ import (
 // TODO: update create user and sing up to db method
 // TODO: create user return password, fix it
 func SignUp(c *fiber.Ctx) error {
-	var uc types.UserTest
+	var uc types.User
 	err := c.BodyParser(&uc)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
@@ -41,7 +41,7 @@ func SignUp(c *fiber.Ctx) error {
 	}
 
 	specialist := types.Specialist
-	user := types.UserTest{
+	user := types.User{
 		UserCredentials: types.UserCredentials{
 			Email:    uc.Email,
 			Password: string(Password),
@@ -67,7 +67,7 @@ func SignUp(c *fiber.Ctx) error {
 	// Check if the email address is already in use
 	collection, _ := db.GetCollection("users")
 	filter := bson.M{"user_credentials.email": user.UserCredentials.Email}
-	var existingUser types.UserTest
+	var existingUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&existingUser)
 	if err == nil {
 		return fmt.Errorf("Email address already in use")
@@ -84,7 +84,7 @@ func SignUp(c *fiber.Ctx) error {
 
 	// Retrieve the updated user from MongoDB
 	filter = bson.M{"_id": objId}
-	var createdUser types.UserTest
+	var createdUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdUser)
 	if err != nil {
 		return fmt.Errorf("Error retrieving created user: ", err)
@@ -108,7 +108,7 @@ func SignIn(c *fiber.Ctx) error {
 
 	collection, _ := db.GetCollection("users")
 	filter := bson.M{"user_credentials.email": uc.Email}
-	var user types.UserTest
+	var user types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&user)
 
 	if err != nil {
@@ -179,7 +179,7 @@ func Check(c *fiber.Ctx) error {
 
 	collection, _ := db.GetCollection("users")
 	filter := bson.M{"_id": objId}
-	var user types.UserTest
+	var user types.User
 	err := collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {

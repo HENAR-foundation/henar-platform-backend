@@ -64,7 +64,7 @@ type UserBody struct {
 	UserProjects    `json:"user_projects,omitempty" bson:"user_projects"`
 }
 
-type UserTest struct {
+type User struct {
 	ID              primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	UserCredentials `bson:"user_credentials"`
 	UserBody        `bson:"user_body"`
