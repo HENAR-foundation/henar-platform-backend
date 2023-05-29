@@ -195,7 +195,9 @@ func CreateResearch(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
-	user.Researches = make(map[primitive.ObjectID]bool)
+	if user.Researches == nil {
+		user.Researches = make(map[primitive.ObjectID]bool)
+	}
 	user.Researches[createdResearch.ID] = true
 
 	update := bson.M{"$set": user}

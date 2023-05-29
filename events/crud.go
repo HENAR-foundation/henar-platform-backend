@@ -198,7 +198,10 @@ func CreateEvent(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
-	user.Events = make(map[primitive.ObjectID]bool)
+	// TODO: test many events
+	if user.Events == nil {
+		user.Events = make(map[primitive.ObjectID]bool)
+	}
 	user.Events[createdEvent.ID] = true
 
 	update := bson.M{"$set": user}

@@ -108,9 +108,14 @@ func Setup(app *fiber.App) {
 	usersGroupSecured.Patch("/:id", users.UpdateUser)
 	usersGroupSecured.Delete("/:id", users.DeleteUser)
 
+	// user contacts handlers
 	usersGroupSecured.Get("request/:id", users.RequestContacts)
 	usersGroupSecured.Get("approve/:id", users.ApproveContactsRequest)
 	usersGroupSecured.Get("reject/:id", users.RejectContactsRequest)
+
+	// user projects handlers
+	usersGroupSecured.Get("approve-project-request/:id", users.ApproveProjectRequest)
+	usersGroupSecured.Get("reject-project-request/:id", users.RejectProjectRequest)
 
 	staticGroup := app.Group("/v1/files")
 	staticGroup.Post("/upload", static.UploadFile)

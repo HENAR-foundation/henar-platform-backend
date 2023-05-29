@@ -419,8 +419,8 @@ func RespondToProject(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
 
-	userId := c.Locals("user_id").(string)
-	userObjId, err := primitive.ObjectIDFromHex(userId)
+	requsterId := c.Locals("user_id").(string)
+	requesterObjId, err := primitive.ObjectIDFromHex(requsterId)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
@@ -434,7 +434,7 @@ func RespondToProject(c *fiber.Ctx) error {
 
 	// Update the project document in MongoDB
 	filter := bson.M{"_id": objId}
-	update := bson.M{"$addToSet": bson.M{"applicants": userObjId}}
+	update := bson.M{"$addToSet": bson.M{"applicants": requesterObjId}}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
@@ -446,6 +446,32 @@ func RespondToProject(c *fiber.Ctx) error {
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedProject)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
+	}
+
+	// update approver
+	usersCollection, _ := db.GetCollection("users")
+
+	approverId := updatedProject.CreatedBy
+
+	approverFilter := bson.M{"_id": approverId}
+	var approver types.User
+	err = usersCollection.FindOne(context.TODO(), approverFilter).Decode(&approver)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	if approver.ProjectsApplications == nil {
+		approver.ProjectsApplications = make(map[primitive.ObjectID]bool)
+	}
+	approver.ProjectsApplications[requesterObjId] = true
+
+	approverUpdate := bson.M{"$set": approver}
+	_, err = usersCollection.UpdateOne(context.TODO(), approverFilter, approverUpdate)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
 	// Set the response headers and write the response body
@@ -471,8 +497,8 @@ func CancelProjectApplication(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
 
-	userId := c.Locals("user_id").(string)
-	userObjId, err := primitive.ObjectIDFromHex(userId)
+	requsterId := c.Locals("user_id").(string)
+	requesterObjId, err := primitive.ObjectIDFromHex(requsterId)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
@@ -486,7 +512,7 @@ func CancelProjectApplication(c *fiber.Ctx) error {
 
 	// Update the project document in MongoDB
 	filter := bson.M{"_id": objId}
-	update := bson.M{"$pull": bson.M{"applicants": userObjId}}
+	update := bson.M{"$pull": bson.M{"applicants": requesterObjId}}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
@@ -498,6 +524,31 @@ func CancelProjectApplication(c *fiber.Ctx) error {
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedProject)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
+	}
+
+	// update approver
+	usersCollection, _ := db.GetCollection("users")
+
+	approverId := updatedProject.CreatedBy
+
+	approverFilter := bson.M{"_id": approverId}
+	var approver types.User
+	err = usersCollection.FindOne(context.TODO(), approverFilter).Decode(&approver)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	delete(approver.ProjectsApplications, requesterObjId)
+	delete(approver.ConfirmedApplications, requesterObjId)
+	approver.RejectedApplicants[requesterObjId] = true
+
+	approverUpdate := bson.M{"$set": approver}
+	_, err = usersCollection.UpdateOne(context.TODO(), approverFilter, approverUpdate)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
 	// Set the response headers and write the response body
