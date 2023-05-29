@@ -139,7 +139,7 @@ func CreateTag(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(tag)
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Error retrieving created tag: " + err.Error()})
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Error retrieving created tag: " + err.Error()})
 	}
 
 	// Insert tag document into MongoDB

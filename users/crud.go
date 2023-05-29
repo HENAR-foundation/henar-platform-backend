@@ -37,7 +37,7 @@ func CreateUser(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(uc)
 	if err != nil {
-		return fmt.Errorf("error validating user: %w", err)
+		return c.Status(http.StatusBadRequest).SendString("Error validating user: " + err.Error())
 	}
 
 	// Hash the password
@@ -46,7 +46,7 @@ func CreateUser(c *fiber.Ctx) error {
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
-		return fmt.Errorf("Error hashing password: %w", err)
+		return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
 	}
 
 	specialist := types.Specialist
@@ -71,6 +71,7 @@ func CreateUser(c *fiber.Ctx) error {
 			},
 		},
 	}
+	// TODO: check user
 	v.Struct(user)
 
 	// Check if the email address is already in use
@@ -142,7 +143,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	// Hash the password
 	Password, err := bcrypt.GenerateFromPassword([]byte(updateBody.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return fmt.Errorf("Error hashing password: %w", err)
+		return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
 	}
 	// var user types.User
 	updateBody.Password = string(Password)

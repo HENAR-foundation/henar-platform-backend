@@ -139,7 +139,7 @@ func CreateStatistic(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(statistic)
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Error retrieving created statistic: " + err.Error())
+		return c.Status(http.StatusBadRequest).SendString("Error retrieving created statistic: " + err.Error())
 	}
 
 	// Insert statistic document into MongoDB

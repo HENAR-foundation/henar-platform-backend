@@ -154,7 +154,7 @@ func CreateResearch(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(research)
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Error retrieving created research: " + err.Error())
+		return c.Status(http.StatusBadRequest).SendString("Error retrieving created research: " + err.Error())
 	}
 
 	// update fields
