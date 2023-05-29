@@ -151,7 +151,7 @@ func CreateEvent(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(event)
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Error retrieving created event: " + err.Error())
+		return c.Status(http.StatusBadRequest).SendString("Error retrieving created event: " + err.Error())
 	}
 
 	// TODO: POST: pending by default, but Admin need to set any
@@ -159,12 +159,13 @@ func CreateEvent(c *fiber.Ctx) error {
 	// TODO: need ability for user can change ModerationStatus
 
 	// update fields
-	userId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
+	// userId := c.Locals("user_id").(string)
+	userObjId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
-	event.CreatedBy = userId
+	event.CreatedBy = userObjId
 	pending := types.Pending
 	event.ModerationStatus = &pending
 	slugText := utils.CreateSlug(event.Title)
@@ -182,6 +183,31 @@ func CreateEvent(c *fiber.Ctx) error {
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdEvent)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated event: " + err.Error())
+	}
+
+	// update user
+	usersCollection, _ := db.GetCollection("users")
+	userFilter := bson.M{"_id": userObjId}
+
+	var user types.User
+	err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	// TODO: test many events
+	if user.Events == nil {
+		user.Events = make(map[primitive.ObjectID]bool)
+	}
+	user.Events[createdEvent.ID] = true
+
+	update := bson.M{"$set": user}
+	_, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
 	// Set the response headers and write the response body
@@ -289,14 +315,14 @@ func DeleteEvent(c *fiber.Ctx) error {
 
 	// Get the event ID from the URL path parameter
 	id := c.Params("id")
-	objId, err := primitive.ObjectIDFromHex(id)
+	eventObjId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
 	// Find the event document from MongoDB
 	var event types.Event
-	err = collection.FindOne(context.TODO(), bson.M{"_id": objId}).Decode(&event)
+	err = collection.FindOne(context.TODO(), bson.M{"_id": eventObjId}).Decode(&event)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).SendString("Event not found")
@@ -304,14 +330,16 @@ func DeleteEvent(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error getting event: " + err.Error())
 	}
 
+	userId := c.Locals("user_id").(string)
+
 	if c.Locals("userRole") != "admin" &&
-		c.Locals("user_id") != event.CreatedBy.Hex() {
+		userId != event.CreatedBy.Hex() {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"message": "Permission or ownership error",
 		})
 	}
 
-	filter := bson.D{{Key: "_id", Value: objId}}
+	filter := bson.D{{Key: "_id", Value: eventObjId}}
 
 	// Delete event document from MongoDB
 	result, err := collection.DeleteOne(context.TODO(), filter)
@@ -322,6 +350,30 @@ func DeleteEvent(c *fiber.Ctx) error {
 	// Check if any documents were deleted
 	if result.DeletedCount == 0 {
 		return c.Status(http.StatusNotFound).SendString("Event not found")
+	}
+
+	// update user
+	usersCollection, _ := db.GetCollection("users")
+	userObjId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+	var user types.User
+	userFilter := bson.M{"_id": userObjId}
+	err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	delete(user.Events, eventObjId)
+
+	update := bson.M{"$set": user}
+	_, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
 	return c.SendString("Event deleted successfully")
