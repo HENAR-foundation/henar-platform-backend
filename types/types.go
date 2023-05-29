@@ -47,18 +47,18 @@ type UserProjects struct {
 }
 
 type UserBody struct {
-	Avatar          string               `json:"avatar"`
-	FullName        Translations         `json:"full_name,omitempty" bson:"full_name,omitempty"`
-	Description     string               `json:"description"`
-	Contacts        Contacts             `json:"contacts,omitempty"`
-	Location        primitive.ObjectID   `json:"location,omitempty" bson:"location,omitempty"`
-	Role            *Role                `json:"role,omitempty"`
-	Job             string               `json:"job"`
-	Language        string               `json:"language"`
-	Tags            []primitive.ObjectID `json:"tags"`
-	Notifications   []primitive.ObjectID `json:"notification,omitempty" bson:"notification,omitempty"`
-	Events          []primitive.ObjectID `json:"events,omitempty" bson:"events,omitempty"`
-	Researches      []primitive.ObjectID `json:"researches,omitempty" bson:"researches,omitempty"`
+	Avatar          string                      `json:"avatar"`
+	FullName        Translations                `json:"full_name,omitempty" bson:"full_name,omitempty"`
+	Description     string                      `json:"description"`
+	Contacts        Contacts                    `json:"contacts,omitempty"`
+	Location        primitive.ObjectID          `json:"location,omitempty" bson:"location,omitempty"`
+	Role            *Role                       `json:"role,omitempty"`
+	Job             string                      `json:"job"`
+	Language        string                      `json:"language"`
+	Tags            []primitive.ObjectID        `json:"tags"`
+	Notifications   []primitive.ObjectID        `json:"notification,omitempty" bson:"notification,omitempty"`
+	Events          map[primitive.ObjectID]bool `json:"events" bson:"events"`
+	Researches      map[primitive.ObjectID]bool `json:"researches" bson:"researches"`
 	ContactsRequest `json:"contacts_request,omitempty" bson:"contacts_request"`
 	UserProjects    `json:"user_projects,omitempty" bson:"user_projects"`
 }
@@ -70,11 +70,6 @@ type User struct {
 }
 
 // TODO: add Events, ... [] to user for admin
-// TODO: concat User and UserBody
-// TODO: add Role by default on create user
-// TODO: how to add required for other fields after registration?
-// TODO: return only specialist if user is not admin
-// TODO: add default language
 
 type NotificationStatus int
 
@@ -237,7 +232,6 @@ func ValidateEnum(fl validator.FieldLevel) bool {
 	return value.IsValid()
 }
 
-// TODO: how_to_help_the_project can has many values? can be empty?
 // TODO: author can update project moderation_status after reject
 type Project struct {
 	ID                   primitive.ObjectID           `json:"_id,omitempty" bson:"_id,omitempty"`
@@ -258,8 +252,6 @@ type Project struct {
 	SuccessfulApplicants *[]primitive.ObjectID        `json:"successful_applicants" bson:"successful_applicants,omitempty"`
 	RejectedApplicants   *[]primitive.ObjectID        `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
 }
-
-// TODO: handler for reject applicant
 
 type Research struct {
 	ID               primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`

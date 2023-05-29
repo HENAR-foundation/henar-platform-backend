@@ -108,7 +108,7 @@ func GetProjects(c *fiber.Ctx) error {
 	filter, err := utils.GetFilter(c)
 	if err != nil {
 		errMsg := fmt.Sprintf("Error getting projects filter: %v", err)
-		return c.Status(fiber.StatusInternalServerError).SendString(errMsg)
+		return c.Status(fiber.StatusBadRequest).SendString(errMsg)
 	}
 
 	sort := utils.GetSort(c)
@@ -119,7 +119,7 @@ func GetProjects(c *fiber.Ctx) error {
 	// Query the database and get the cursor
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Error finding projects")
+		return c.Status(http.StatusBadRequest).SendString("Error finding projects")
 	}
 
 	// Get the results from the cursor
@@ -176,7 +176,7 @@ func CreateProject(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(project)
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Error retrieving created project: " + err.Error())
+		return c.Status(http.StatusBadRequest).SendString("Error retrieving created project: " + err.Error())
 	}
 
 	userId := c.Locals("user_id").(string)
@@ -367,7 +367,7 @@ func DeleteProject(store *session.Store) func(c *fiber.Ctx) error {
 			return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 		}
 
-		// update user project list
+		// update user projects list
 		// TODO: delete for all applicants
 		usersCollection, _ := db.GetCollection("users")
 		userFilter := bson.M{"_id": userObjId}
