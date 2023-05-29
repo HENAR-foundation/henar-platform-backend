@@ -39,11 +39,10 @@ type ContactsRequest struct {
 	BlockedUsers              map[primitive.ObjectID]bool `json:"blocked_users" bson:"blocked_users"`
 }
 
-// TODO: do I need projects history?
 type UserProjects struct {
 	ProjectsApplications  map[primitive.ObjectID]bool `json:"projects_applications" bson:"projects_applications"`
 	ConfirmedApplications map[primitive.ObjectID]bool `json:"confirmed_applications" bson:"confirmed_applications"`
-	RejectedApplicants    map[primitive.ObjectID]bool `json:"rejected_applicants"omitempty" bson:"rejected_applicants"`
+	RejectedApplicants    map[primitive.ObjectID]bool `json:"rejected_applicants" bson:"rejected_applicants"`
 	CreatedProjects       map[primitive.ObjectID]bool `json:"created_projects" bson:"created_projects"`
 }
 
@@ -256,7 +255,7 @@ type Project struct {
 	ModerationStatus     *ModerationStatus            `json:"moderation_status,omitempty" bson:"moderation_status,omitempty"`
 	ReasonOfReject       *string                      `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
 	Applicants           *[]primitive.ObjectID        `json:"applicants,omitempty" bson:"applicants,omitempty"`
-	SuccessfulApplicants *[]primitive.ObjectID        `json:"successful_applicants,omitempty" bson:"successful_applicants,omitempty"`
+	SuccessfulApplicants *[]primitive.ObjectID        `json:"successful_applicants" bson:"successful_applicants,omitempty"`
 	RejectedApplicants   *[]primitive.ObjectID        `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
 }
 
