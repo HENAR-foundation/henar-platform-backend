@@ -61,7 +61,7 @@ func GetResearches(c *fiber.Ctx) error {
 	// Get the results from the cursor
 	var results []types.Research
 	if err = cursor.All(context.TODO(), &results); err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Error finding projects")
+		return c.Status(http.StatusInternalServerError).SendString("Error finding reseaches")
 	}
 	if c.Locals("userRole") != "admin" {
 		fieldsToUpdate := []string{"ModerationStatus", "ReasonOfReject"}

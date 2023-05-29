@@ -45,7 +45,7 @@ func GetStatistics(c *fiber.Ctx) error {
 	// Get the results from the cursor
 	var results []types.Statistic
 	if err = cursor.All(context.TODO(), &results); err != nil {
-		panic(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error finding statistics")
 	}
 
 	// Marshal the statistic struct to JSON format
