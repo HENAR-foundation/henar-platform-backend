@@ -412,7 +412,7 @@ func DeleteProject(store *session.Store) func(c *fiber.Ctx) error {
 // @Success 200 {object} types.Project
 // @Failure 400 {string} string "Invalid ID or project ID"
 // @Failure 500 {string} string "Error connecting to database or updating/retrieving project"
-// @Router /projects/{id}/respond [get]
+// @Router /projects/respond/{id} [get]
 func RespondToProject(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("projects")
 	if err != nil {
@@ -490,7 +490,7 @@ func RespondToProject(c *fiber.Ctx) error {
 // @Success 200 {object} types.Project
 // @Failure 400 {string} string "Invalid ID or project ID"
 // @Failure 500 {string} string "Error connecting to database or updating/retrieving project"
-// @Router /projects/{id}/cancel [get]
+// @Router /projects/cancel/{id} [get]
 func CancelProjectApplication(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("projects")
 	if err != nil {

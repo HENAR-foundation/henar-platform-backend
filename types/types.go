@@ -24,7 +24,6 @@ type UserCredentials struct {
 	Password string `json:"password,omitempty" validate:"required" bson:"password"`
 }
 
-// Password string `json:"password" validate:"required"`
 type Contacts struct {
 	Phone     string `json:"phone,omitempty"`
 	Facebook  string `json:"facebook,omitempty"`
@@ -32,11 +31,15 @@ type Contacts struct {
 	Linkedin  string `json:"linkedin,omitempty"`
 }
 
+type RequestMessage struct {
+	Message string
+}
+
 type ContactsRequest struct {
-	IncomingContactRequests   map[primitive.ObjectID]bool `json:"incoming_contact_requests" bson:"incoming_contact_requests"`
-	OutgoingContactRequests   map[primitive.ObjectID]bool `json:"outgoing_contact_requests" bson:"outgoing_contact_requests"`
-	ConfirmedContactsRequests map[primitive.ObjectID]bool `json:"confirmed_contacts_requests" bson:"confirmed_contacts_requests"`
-	BlockedUsers              map[primitive.ObjectID]bool `json:"blocked_users" bson:"blocked_users"`
+	IncomingContactRequests   map[primitive.ObjectID]string `json:"incoming_contact_requests" bson:"incoming_contact_requests"`
+	OutgoingContactRequests   map[primitive.ObjectID]string `json:"outgoing_contact_requests" bson:"outgoing_contact_requests"`
+	ConfirmedContactsRequests map[primitive.ObjectID]string `json:"confirmed_contacts_requests" bson:"confirmed_contacts_requests"`
+	BlockedUsers              map[primitive.ObjectID]string `json:"blocked_users" bson:"blocked_users"`
 }
 
 type UserProjects struct {
