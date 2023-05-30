@@ -15,19 +15,19 @@ definitions:
     properties:
       blocked_users:
         additionalProperties:
-          type: boolean
+          type: string
         type: object
       confirmed_contacts_requests:
         additionalProperties:
-          type: boolean
+          type: string
         type: object
       incoming_contact_requests:
         additionalProperties:
-          type: boolean
+          type: string
         type: object
       outgoing_contact_requests:
         additionalProperties:
-          type: boolean
+          type: string
         type: object
     type: object
   types.Event:
@@ -166,6 +166,11 @@ definitions:
     - LaunchAndExecution
     - PerfomanceAndControl
     - Closed
+  types.RequestMessage:
+    properties:
+      message:
+        type: string
+    type: object
   types.Research:
     properties:
       _id:
@@ -256,9 +261,9 @@ definitions:
       email:
         type: string
       events:
-        items:
-          type: string
-        type: array
+        additionalProperties:
+          type: boolean
+        type: object
       full_name:
         $ref: '#/definitions/types.Translations'
       job:
@@ -274,9 +279,9 @@ definitions:
       password:
         type: string
       researches:
-        items:
-          type: string
-        type: array
+        additionalProperties:
+          type: boolean
+        type: object
       role:
         $ref: '#/definitions/types.Role'
       tags:
@@ -300,9 +305,9 @@ definitions:
       description:
         type: string
       events:
-        items:
-          type: string
-        type: array
+        additionalProperties:
+          type: boolean
+        type: object
       full_name:
         $ref: '#/definitions/types.Translations'
       job:
@@ -316,9 +321,9 @@ definitions:
           type: string
         type: array
       researches:
-        items:
-          type: string
-        type: array
+        additionalProperties:
+          type: boolean
+        type: object
       role:
         $ref: '#/definitions/types.Role'
       tags:
@@ -353,7 +358,7 @@ info:
   title: Henar
   version: "1.0"
 paths:
-  /projects/{id}/cancel:
+  /projects/cancel/{id}:
     get:
       consumes:
       - application/json
@@ -382,7 +387,7 @@ paths:
       summary: Cancel project application
       tags:
       - projects
-  /projects/{id}/respond:
+  /projects/respond/{id}:
     get:
       consumes:
       - application/json
@@ -473,7 +478,7 @@ paths:
       summary: Update an existing user
       tags:
       - users
-  /users/{id}/approve:
+  /users/approve-contacts-request/{id}:
     get:
       consumes:
       - application/json
@@ -508,7 +513,40 @@ paths:
       summary: Approve contact request
       tags:
       - users
-  /users/{id}/reject:
+  /users/approve/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Approves a project request for the user.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Request approved successfully.
+          schema:
+            type: string
+        "400":
+          description: Invalid project ID or user ID
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Error connecting to database or updating user
+          schema:
+            type: string
+      summary: Approve project request
+      tags:
+      - users
+  /users/reject-contacts-request/{id}:
     get:
       consumes:
       - application/json
@@ -543,8 +581,41 @@ paths:
       summary: Reject contact request
       tags:
       - users
-  /users/{id}/request:
+  /users/reject/{id}:
     get:
+      consumes:
+      - application/json
+      description: Rejects a project request for the user.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Request rejected successfully.
+          schema:
+            type: string
+        "400":
+          description: Invalid project ID or user ID
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Error connecting to database or updating user
+          schema:
+            type: string
+      summary: Reject project request
+      tags:
+      - users
+  /users/request-contacts/{id}:
+    post:
       consumes:
       - application/json
       description: Sends a contact request to the specified user.
@@ -554,6 +625,12 @@ paths:
         name: id
         required: true
         type: string
+      - description: Request body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/types.RequestMessage'
       produces:
       - application/json
       responses:

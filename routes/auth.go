@@ -49,10 +49,10 @@ func SignUp(c *fiber.Ctx) error {
 		UserBody: types.UserBody{
 			Role: &specialist,
 			ContactsRequest: types.ContactsRequest{
-				IncomingContactRequests:   make(map[primitive.ObjectID]bool),
-				OutgoingContactRequests:   make(map[primitive.ObjectID]bool),
-				ConfirmedContactsRequests: make(map[primitive.ObjectID]bool),
-				BlockedUsers:              make(map[primitive.ObjectID]bool),
+				IncomingContactRequests:   make(map[primitive.ObjectID]string),
+				OutgoingContactRequests:   make(map[primitive.ObjectID]string),
+				ConfirmedContactsRequests: make(map[primitive.ObjectID]string),
+				BlockedUsers:              make(map[primitive.ObjectID]string),
 			},
 			UserProjects: types.UserProjects{
 				ProjectsApplications:  make(map[primitive.ObjectID]bool),

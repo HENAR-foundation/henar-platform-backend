@@ -16,7 +16,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/projects/{id}/cancel": {
+        "/projects/cancel/{id}": {
             "get": {
                 "description": "Cancels the user's application for the specified project.",
                 "consumes": [
@@ -60,7 +60,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/projects/{id}/respond": {
+        "/projects/respond/{id}": {
             "get": {
                 "description": "Adds the current user as an applicant to the specified project.",
                 "consumes": [
@@ -139,66 +139,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}": {
-            "patch": {
-                "description": "Updates an existing user in the database",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Update an existing user",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "User details",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.UserBody"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/types.User"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/{id}/approve": {
+        "/users/approve-contacts-request/{id}": {
             "get": {
                 "security": [
                     {
@@ -253,7 +194,57 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}/reject": {
+        "/users/approve/{id}": {
+            "get": {
+                "description": "Approves a project request for the user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Approve project request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request approved successfully.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid project ID or user ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error connecting to database or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/reject-contacts-request/{id}": {
             "get": {
                 "security": [
                     {
@@ -308,8 +299,58 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}/request": {
+        "/users/reject/{id}": {
             "get": {
+                "description": "Rejects a project request for the user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Reject project request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request rejected successfully.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid project ID or user ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error connecting to database or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/request-contacts/{id}": {
+            "post": {
                 "description": "Sends a contact request to the specified user.",
                 "consumes": [
                     "application/json"
@@ -328,6 +369,15 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.RequestMessage"
+                        }
                     }
                 ],
                 "responses": {
@@ -351,6 +401,65 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Error connecting to database or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}": {
+            "patch": {
+                "description": "Updates an existing user in the database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update an existing user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "User details",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UserBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "type": "string"
                         }
@@ -2179,25 +2288,25 @@ const docTemplate = `{
                 "blocked_users": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "boolean"
+                        "type": "string"
                     }
                 },
                 "confirmed_contacts_requests": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "boolean"
+                        "type": "string"
                     }
                 },
                 "incoming_contact_requests": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "boolean"
+                        "type": "string"
                     }
                 },
                 "outgoing_contact_requests": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "boolean"
+                        "type": "string"
                     }
                 }
             }
@@ -2401,6 +2510,14 @@ const docTemplate = `{
                 "Closed"
             ]
         },
+        "types.RequestMessage": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "types.Research": {
             "type": "object",
             "required": [
@@ -2539,9 +2656,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "events": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
                 },
                 "full_name": {
@@ -2566,9 +2683,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "researches": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
                 },
                 "role": {
@@ -2601,9 +2718,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "events": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
                 },
                 "full_name": {
@@ -2625,9 +2742,9 @@ const docTemplate = `{
                     }
                 },
                 "researches": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
                 },
                 "role": {

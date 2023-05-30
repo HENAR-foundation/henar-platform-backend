@@ -58,10 +58,10 @@ func CreateUser(c *fiber.Ctx) error {
 		UserBody: types.UserBody{
 			Role: &specialist,
 			ContactsRequest: types.ContactsRequest{
-				IncomingContactRequests:   make(map[primitive.ObjectID]bool),
-				OutgoingContactRequests:   make(map[primitive.ObjectID]bool),
-				ConfirmedContactsRequests: make(map[primitive.ObjectID]bool),
-				BlockedUsers:              make(map[primitive.ObjectID]bool),
+				IncomingContactRequests:   make(map[primitive.ObjectID]string),
+				OutgoingContactRequests:   make(map[primitive.ObjectID]string),
+				ConfirmedContactsRequests: make(map[primitive.ObjectID]string),
+				BlockedUsers:              make(map[primitive.ObjectID]string),
 			},
 			UserProjects: types.UserProjects{
 				ProjectsApplications:  make(map[primitive.ObjectID]bool),
@@ -264,7 +264,7 @@ func GetUser(c *fiber.Ctx) error {
 
 	// check access to contacts
 	if userRole != "admin" ||
-		user.ConfirmedContactsRequests[userObjId] ||
+		user.ConfirmedContactsRequests[userObjId] != "" ||
 		userId != user.ID {
 		fmt.Println(4)
 		fieldsToUpdate := []string{"Contacts", "UserCredentials"}
@@ -395,12 +395,26 @@ func DeleteUser(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID"
+// @Param body body types.RequestMessage true "Request body"
 // @Success 200 {string} string "Contact request added successfully."
 // @Failure 400 {string} string "Invalid project ID or user ID"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Error connecting to database or updating user"
-// @Router /users/{id}/request [get]
+// @Router /users/request-contacts/{id} [post]
 func RequestContacts(c *fiber.Ctx) error {
+	var rm types.RequestMessage
+	err := c.BodyParser(&rm)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
+	}
+
+	// Validate the required fields
+	v := validator.New()
+	err = v.Struct(rm)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Error validating user: " + err.Error())
+	}
+
 	collection, err := db.GetCollection("users")
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
@@ -440,13 +454,13 @@ func RequestContacts(c *fiber.Ctx) error {
 	}
 
 	var msg string
-	if approver.IncomingContactRequests[requesterId] {
+	if approver.IncomingContactRequests[requesterId] != "" {
 		delete(approver.IncomingContactRequests, requesterId)
 		delete(requester.OutgoingContactRequests, approverId)
 		msg = "Contact request deleted successfully."
 	} else {
-		approver.IncomingContactRequests[requesterId] = true
-		requester.OutgoingContactRequests[approverId] = true
+		approver.IncomingContactRequests[requesterId] = rm.Message
+		requester.OutgoingContactRequests[approverId] = rm.Message
 		msg = "Contact request added successfully."
 	}
 
@@ -482,7 +496,7 @@ func RequestContacts(c *fiber.Ctx) error {
 // @Failure 400 {string} string "Invalid project ID or user ID"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Error connecting to database or updating user"
-// @Router /users/{id}/approve [get]
+// @Router /users/approve-contacts-request/{id} [get]
 func ApproveContactsRequest(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("users")
 	if err != nil {
@@ -490,7 +504,7 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 	}
 
 	// Get the project ID from the URL path parameter
-	incomingRequestUserId, err := primitive.ObjectIDFromHex(c.Params("id"))
+	requesterId, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
@@ -511,9 +525,9 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
-	if user.IncomingContactRequests[incomingRequestUserId] {
-		delete(user.IncomingContactRequests, incomingRequestUserId)
-		user.ConfirmedContactsRequests[incomingRequestUserId] = true
+	if user.IncomingContactRequests[requesterId] != "" {
+		user.ConfirmedContactsRequests[requesterId] = user.IncomingContactRequests[requesterId]
+		delete(user.IncomingContactRequests, requesterId)
 	}
 
 	// update approver
@@ -539,7 +553,7 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 // @Failure 400 {string} string "Invalid project ID or user ID"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Error connecting to database or updating user"
-// @Router /users/{id}/reject [get]
+// @Router /users/reject-contacts-request/{id} [get]
 func RejectContactsRequest(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("users")
 	if err != nil {
@@ -547,7 +561,7 @@ func RejectContactsRequest(c *fiber.Ctx) error {
 	}
 
 	// Get the project ID from the URL path parameter
-	incomingRequestUserId, err := primitive.ObjectIDFromHex(c.Params("id"))
+	requesterId, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
@@ -568,9 +582,9 @@ func RejectContactsRequest(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
-	if user.IncomingContactRequests[incomingRequestUserId] {
-		delete(user.IncomingContactRequests, incomingRequestUserId)
-		user.BlockedUsers[incomingRequestUserId] = true
+	if user.IncomingContactRequests[requesterId] != "" {
+		user.BlockedUsers[requesterId] = user.IncomingContactRequests[requesterId]
+		delete(user.IncomingContactRequests, requesterId)
 	}
 
 	// update approver
@@ -584,6 +598,18 @@ func RejectContactsRequest(c *fiber.Ctx) error {
 	return c.SendString("Done")
 }
 
+// ApproveProjectRequest approves a project request for the user.
+// @Summary Approve project request
+// @Description Approves a project request for the user.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {string} string "Request approved successfully."
+// @Failure 400 {string} string "Invalid project ID or user ID"
+// @Failure 404 {string} string "User not found"
+// @Failure 500 {string} string "Error connecting to database or updating user"
+// @Router /users/approve/{id} [get]
 func ApproveProjectRequest(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("users")
 	if err != nil {
@@ -629,6 +655,18 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	return c.SendString("Done")
 }
 
+// RejectProjectRequest rejects a project request for the user.
+// @Summary Reject project request
+// @Description Rejects a project request for the user.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {string} string "Request rejected successfully."
+// @Failure 400 {string} string "Invalid project ID or user ID"
+// @Failure 404 {string} string "User not found"
+// @Failure 500 {string} string "Error connecting to database or updating user"
+// @Router /users/reject/{id} [get]
 func RejectProjectRequest(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("users")
 	if err != nil {
