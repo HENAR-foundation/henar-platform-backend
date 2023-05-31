@@ -201,6 +201,8 @@ func CreateProject(c *fiber.Ctx) error {
 
 	slugText := utils.CreateSlug(project.Title)
 	project.Slug = &slugText
+	project.Applicants = make(map[primitive.ObjectID]bool)
+	project.SuccessfulApplicants = make(map[primitive.ObjectID]bool)
 
 	// Insert project document into MongoDB
 	result, err := projectsCollection.InsertOne(context.TODO(), project)
@@ -434,7 +436,7 @@ func RespondToProject(c *fiber.Ctx) error {
 
 	// Update the project document in MongoDB
 	filter := bson.M{"_id": objId}
-	update := bson.M{"$addToSet": bson.M{"applicants": requesterObjId}}
+	update := bson.M{"$set": bson.M{"applicants": primitive.M{requesterObjId.Hex(): true}}}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
