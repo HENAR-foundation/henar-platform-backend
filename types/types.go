@@ -55,7 +55,7 @@ type UserBody struct {
 	Description     string                      `json:"description"`
 	Contacts        Contacts                    `json:"contacts,omitempty"`
 	Location        primitive.ObjectID          `json:"location,omitempty" bson:"location,omitempty"`
-	Role            *Role                       `json:"role,omitempty"`
+	Role            *Role                       `json:"role,omitempty", bson:"role,omitempty"`
 	Job             string                      `json:"job"`
 	Language        string                      `json:"language"`
 	Tags            []primitive.ObjectID        `json:"tags"`
@@ -251,8 +251,8 @@ type Project struct {
 	ProjectStatus        ProjectStatus                `json:"project_status" bson:"project_status,omitempty"`
 	ModerationStatus     *ModerationStatus            `json:"moderation_status,omitempty" bson:"moderation_status,omitempty"`
 	ReasonOfReject       *string                      `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
-	Applicants           *[]primitive.ObjectID        `json:"applicants,omitempty" bson:"applicants,omitempty"`
-	SuccessfulApplicants *[]primitive.ObjectID        `json:"successful_applicants" bson:"successful_applicants,omitempty"`
+	Applicants           map[primitive.ObjectID]bool  `json:"applicants,omitempty" bson:"applicants,omitempty"`
+	SuccessfulApplicants map[primitive.ObjectID]bool  `json:"successful_applicants" bson:"successful_applicants,omitempty"`
 	RejectedApplicants   *[]primitive.ObjectID        `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
 }
 

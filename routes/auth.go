@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"henar-backend/db"
 	"henar-backend/types"
+	"henar-backend/utils"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -187,6 +188,9 @@ func Check(c *fiber.Ctx) error {
 		}
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
+
+	fieldsToUpdate := []string{"Password"}
+	utils.UpdateResultForUserRole(&user, fieldsToUpdate)
 
 	return c.Status(http.StatusOK).JSON(user)
 }
