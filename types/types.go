@@ -21,7 +21,7 @@ const (
 
 type UserCredentials struct {
 	Email    string `json:"email,omitempty" validate:"required,email"`
-	Password string `json:"password,omitempty" validate:"required" bson:"password"`
+	Password string `json:"password,omitempty" bson:"password"`
 }
 
 type Contacts struct {

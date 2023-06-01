@@ -26,6 +26,7 @@ import (
 // @Failure 500 {string} string "Internal server error"
 // @Router /users [post]
 func CreateUser(c *fiber.Ctx) error {
+	// TODO: don't return password
 	// Parse request body into user struct
 	var uc types.User
 	err := c.BodyParser(&uc)
@@ -140,13 +141,13 @@ func UpdateUser(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing user ID: " + err.Error())
 	}
 
-	// Hash the password
-	Password, err := bcrypt.GenerateFromPassword([]byte(updateBody.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
+	if updateBody.Password != "" {
+		Password, err := bcrypt.GenerateFromPassword([]byte(updateBody.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
+		}
+		updateBody.Password = string(Password)
 	}
-	// var user types.User
-	updateBody.Password = string(Password)
 
 	// Update the user document in MongoDB
 	collection, _ := db.GetCollection("users")
