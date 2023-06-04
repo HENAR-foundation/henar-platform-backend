@@ -20,8 +20,8 @@ const (
 )
 
 type UserCredentials struct {
-	Email    string `json:"email,omitempty" validate:"required,email"`
-	Password string `json:"password,omitempty" bson:"password"`
+	Email    string  `json:"email,omitempty" validate:"required,email"`
+	Password *string `json:"password,omitempty" bson:"password,omitempty"`
 }
 
 type Contacts struct {
@@ -68,11 +68,9 @@ type UserBody struct {
 
 type User struct {
 	ID              primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	UserCredentials `bson:"user_credentials"`
+	UserCredentials `bson:"user_credentials,omitempty"`
 	UserBody        `bson:"user_body"`
 }
-
-// TODO: add Events, ... [] to user for admin
 
 type NotificationStatus int
 
@@ -88,7 +86,6 @@ const (
 	ContactUpdate
 )
 
-// TODO: update notification struct
 type Notification struct {
 	id        int64              `json:"id"`
 	CreatedAt string             `json:"created_at"`

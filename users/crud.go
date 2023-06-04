@@ -26,7 +26,6 @@ import (
 // @Failure 500 {string} string "Internal server error"
 // @Router /users [post]
 func CreateUser(c *fiber.Ctx) error {
-	// TODO: don't return password
 	// Parse request body into user struct
 	var uc types.User
 	err := c.BodyParser(&uc)
@@ -41,20 +40,25 @@ func CreateUser(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Error validating user: " + err.Error())
 	}
 
+	if uc.Password == nil {
+		return c.Status(http.StatusBadRequest).SendString("Password is required")
+	}
+
 	// Hash the password
 	Password, err := bcrypt.GenerateFromPassword(
-		[]byte(uc.Password),
+		[]byte(*uc.Password),
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
 	}
 
+	passwordString := string(Password)
 	specialist := types.Specialist
 	user := types.User{
 		UserCredentials: types.UserCredentials{
 			Email:    uc.Email,
-			Password: string(Password),
+			Password: &passwordString,
 		},
 		UserBody: types.UserBody{
 			Role: &specialist,
@@ -100,6 +104,7 @@ func CreateUser(c *fiber.Ctx) error {
 	if err != nil {
 		return fmt.Errorf("Error retrieving created user: ", err)
 	}
+	createdUser.Password = nil
 
 	// Set the response headers and write the response body
 	return c.Status(http.StatusCreated).JSON(createdUser)
@@ -141,14 +146,6 @@ func UpdateUser(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing user ID: " + err.Error())
 	}
 
-	if updateBody.Password != "" {
-		Password, err := bcrypt.GenerateFromPassword([]byte(updateBody.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
-		}
-		updateBody.Password = string(Password)
-	}
-
 	// Update the user document in MongoDB
 	collection, _ := db.GetCollection("users")
 	filter := bson.M{"_id": objId}
@@ -161,13 +158,21 @@ func UpdateUser(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
+	if updateBody.Password != nil {
+		Password, err := bcrypt.GenerateFromPassword([]byte(*updateBody.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
+		}
+		passwordString := string(Password)
+		updateBody.Password = &passwordString
+	} else {
+		updateBody.Password = existingUser.Password
+	}
+
 	// check unique email
 	filter = bson.M{"user_credentials.email": updateBody.Email}
 	var userByEmail types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&userByEmail)
-
-	fmt.Println(objId)
-	fmt.Println(userByEmail)
 
 	if userByEmail.ID != objId {
 		if err == nil {
@@ -666,6 +671,7 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
+	fmt.Println(projectId)
 	filter = bson.M{"_id": objId}
 	var project types.Project
 	err = projectCollection.FindOne(context.TODO(), filter).Decode(&project)

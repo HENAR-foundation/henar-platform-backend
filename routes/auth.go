@@ -24,6 +24,9 @@ func SignUp(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
+	if uc.Password == nil {
+		return c.Status(http.StatusBadRequest).SendString("Password is required")
+	}
 
 	// Validate the required fields
 	v := validator.New()
@@ -34,18 +37,18 @@ func SignUp(c *fiber.Ctx) error {
 
 	// Hash the password
 	Password, err := bcrypt.GenerateFromPassword(
-		[]byte(uc.Password),
+		[]byte(*uc.Password),
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
 		return fmt.Errorf("Error hashing password: %w", err)
 	}
-
+	passwordString := string(Password)
 	specialist := types.Specialist
 	user := types.User{
 		UserCredentials: types.UserCredentials{
 			Email:    uc.Email,
-			Password: string(Password),
+			Password: &passwordString,
 		},
 		UserBody: types.UserBody{
 			Role: &specialist,
@@ -119,7 +122,7 @@ func SignIn(c *fiber.Ctx) error {
 	}
 
 	// Comparing the password with the hash
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(uc.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(*uc.Password))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "wrong credentials",
