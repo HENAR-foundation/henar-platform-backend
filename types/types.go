@@ -51,13 +51,14 @@ type UserProjects struct {
 
 type UserBody struct {
 	Avatar          string                      `json:"avatar"`
-	FullName        Translations                `json:"full_name,omitempty" bson:"full_name,omitempty"`
+	FirstName       string                      `json:"first_name,omitempty" bson:"first_name,omitempty"`
+	LastName        string                      `json:"last_name,omitempty" bson:"last_name,omitempty"`
 	Description     string                      `json:"description"`
 	Contacts        Contacts                    `json:"contacts,omitempty"`
-	Location        primitive.ObjectID          `json:"location,omitempty" bson:"location,omitempty"`
+	Location        *primitive.ObjectID         `json:"location,omitempty" bson:"location,omitempty"`
 	Role            *Role                       `json:"role,omitempty", bson:"role,omitempty"`
 	Job             string                      `json:"job"`
-	Language        string                      `json:"language"`
+	Language        string                      `json:"language,omitempty"`
 	Tags            []primitive.ObjectID        `json:"tags"`
 	Notifications   []primitive.ObjectID        `json:"notification,omitempty" bson:"notification,omitempty"`
 	Events          map[primitive.ObjectID]bool `json:"events" bson:"events"`
