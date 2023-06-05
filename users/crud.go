@@ -253,49 +253,57 @@ func GetUser(c *fiber.Ctx) error {
 	userRole := c.Locals("userRole")
 
 	if userRole != "admin" {
-		fmt.Println(1, "not admin")
 		fieldsToUpdate := []string{"Role"}
 		utils.UpdateResultForUserRole(&user, fieldsToUpdate)
 	}
 
 	userId := c.Locals("user_id")
+	var userObjId primitive.ObjectID
+	if userId != nil {
+		userObjId, err = primitive.ObjectIDFromHex(userId.(string))
+		if err != nil {
+			return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+		}
 
-	if userId == nil {
-		fmt.Println(2, "anon", userId)
-		// TODO: location dont work
-		fieldsToUpdate := []string{"Contacts", "ContactsRequest", "UserProjects", "UserCredentials", "Location", "Language"}
+	}
+
+	if userId == nil ||
+		userRole != "admin" &&
+			(userId != user.ID &&
+				(user.ConfirmedContactsRequests[userObjId] == "" ||
+					user.ConfirmedApplications[userObjId])) {
+		fieldsToUpdate := []string{
+			"Contacts", "ContactsRequest", "UserProjects", "UserCredentials",
+			"Location", "Language",
+		}
 		utils.UpdateResultForUserRole(&user, fieldsToUpdate)
 
 		return c.Status(http.StatusOK).JSON(user)
 	}
 
-	userObjId, err := primitive.ObjectIDFromHex(userId.(string))
-	if err != nil {
-		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
-	}
-
 	// check access to requests and projects
 	// can I show these fields for confirmed user?
-	if userRole != "admin" ||
-		user.ConfirmedApplications[userObjId] ||
-		user.ConfirmedContactsRequests[userObjId] != "" ||
-		userId != user.ID {
-		fmt.Println(3, "admin or confirmed or user")
-		fmt.Println(userRole != "admin")
-		fmt.Println(userId != user.ID)
+	// fmt.Println(user.ConfirmedContactsRequests[userObjId])
+	// if userRole != "admin" ||
+	// 	user.ConfirmedApplications[userObjId] ||
+	// 	user.ConfirmedContactsRequests[userObjId] != "" ||
+	// 	userId != user.ID {
+	// 	fmt.Println(3, "admin or confirmed or user")
+	// 	fmt.Println(userRole != "admin")
+	// 	fmt.Println(userId != user.ID)
 
-		fieldsToUpdate := []string{"ContactsRequest", "UserProjects", "Password"}
-		utils.UpdateResultForUserRole(&user, fieldsToUpdate)
-	}
+	// 	fieldsToUpdate := []string{"ContactsRequest", "UserProjects", "Contacts", "UserCredentials", "Location"}
+	// 	utils.UpdateResultForUserRole(&user, fieldsToUpdate)
+	// }
 
 	// check access to contacts
-	if userRole != "admin" ||
-		user.ConfirmedContactsRequests[userObjId] != "" ||
-		userId != user.ID {
-		fmt.Println(4)
-		fieldsToUpdate := []string{"Contacts", "UserCredentials"}
-		utils.UpdateResultForUserRole(&user, fieldsToUpdate)
-	}
+	// if userRole != "admin" ||
+	// 	user.ConfirmedContactsRequests[userObjId] != "" ||
+	// 	userId != user.ID {
+	// 	fmt.Println(4)
+	// 	fieldsToUpdate := []string{"Contacts", "UserCredentials"}
+	// 	utils.UpdateResultForUserRole(&user, fieldsToUpdate)
+	// }
 
 	// Set the response headers and write the response body
 	return c.Status(http.StatusOK).JSON(user)
@@ -356,14 +364,12 @@ func GetUsers(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).SendString("Error decoding user: " + err.Error())
 		}
+		user.Password = nil
 		users = append(users, user)
 	}
 
-	fieldsToUpdate := []string{"Password"}
-	utils.UpdateResultsForUserRole(users, fieldsToUpdate)
-
 	if userRole != "admin" {
-		fieldsToUpdate := []string{"Role", "Contacts", "ContactsRequest", "UserProjects", "UserCredentials"}
+		fieldsToUpdate := []string{"Role", "Contacts", "ContactsRequest", "UserProjects", "UserCredentials", "Location"}
 		utils.UpdateResultsForUserRole(users, fieldsToUpdate)
 	}
 
@@ -485,6 +491,13 @@ func RequestContacts(c *fiber.Ctx) error {
 		delete(requester.OutgoingContactRequests, approverId)
 		msg = "Contact request deleted successfully."
 	} else {
+		if approver.IncomingContactRequests == nil {
+			approver.IncomingContactRequests = make(map[primitive.ObjectID]string)
+		}
+		if requester.OutgoingContactRequests == nil {
+			requester.OutgoingContactRequests = make(map[primitive.ObjectID]string)
+		}
+
 		approver.IncomingContactRequests[requesterId] = rm.Message
 		requester.OutgoingContactRequests[approverId] = rm.Message
 		msg = "Contact request added successfully."
@@ -535,13 +548,13 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
 
-	userId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
+	approverId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
 	// get approver
-	filter := bson.M{"_id": userId}
+	filter := bson.M{"_id": approverId}
 	var user types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
@@ -552,12 +565,15 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 	}
 
 	if user.IncomingContactRequests[requesterId] != "" {
+		if user.ConfirmedContactsRequests == nil {
+			user.ConfirmedContactsRequests = make(map[primitive.ObjectID]string)
+		}
 		user.ConfirmedContactsRequests[requesterId] = user.IncomingContactRequests[requesterId]
 		delete(user.IncomingContactRequests, requesterId)
 	}
 
 	// update approver
-	filter = bson.M{"_id": userId}
+	filter = bson.M{"_id": approverId}
 	update := bson.M{"$set": user}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
@@ -609,6 +625,10 @@ func RejectContactsRequest(c *fiber.Ctx) error {
 	}
 
 	if user.IncomingContactRequests[requesterId] != "" {
+		if user.BlockedUsers == nil {
+			user.BlockedUsers = make(map[primitive.ObjectID]string)
+		}
+
 		user.BlockedUsers[requesterId] = user.IncomingContactRequests[requesterId]
 		delete(user.IncomingContactRequests, requesterId)
 	}
@@ -644,8 +664,8 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	}
 
 	// Get the project ID from the URL path parameter
-	projectId := c.Params("id")
-	requesterId, err := primitive.ObjectIDFromHex(projectId)
+	requesterId := c.Params("id")
+	requesterObjId, err := primitive.ObjectIDFromHex(requesterId)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
@@ -667,6 +687,7 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	}
 
 	// get project
+	projectId := "647e49d3499d00981f9b84a0"
 	objId, err := primitive.ObjectIDFromHex(projectId)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
@@ -680,11 +701,11 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	}
 
 	// TODO: update project
-	if user.ProjectsApplications[requesterId] {
-		delete(user.ProjectsApplications, requesterId)
-		user.ConfirmedApplications[requesterId] = true
-		delete(project.Applicants, requesterId)
-		project.SuccessfulApplicants[requesterId] = true
+	if user.ProjectsApplications[requesterObjId] {
+		delete(user.ProjectsApplications, requesterObjId)
+		user.ConfirmedApplications[requesterObjId] = true
+		delete(project.Applicants, requesterObjId)
+		project.SuccessfulApplicants[requesterObjId] = true
 
 	}
 

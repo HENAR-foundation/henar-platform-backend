@@ -221,6 +221,9 @@ func CreateProject(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
 	}
 
+	if user.CreatedProjects == nil {
+		user.CreatedProjects = make(map[primitive.ObjectID]bool)
+	}
 	user.CreatedProjects[createdProject.ID] = true
 
 	update := bson.M{"$set": user}
