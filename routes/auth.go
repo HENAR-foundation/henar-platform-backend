@@ -32,7 +32,7 @@ func SignUp(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(uc)
 	if err != nil {
-		return fmt.Errorf("error validating user: %w", err)
+		return c.Status(http.StatusBadRequest).SendString("error validating user: " + err.Error())
 	}
 
 	// Hash the password
@@ -74,7 +74,7 @@ func SignUp(c *fiber.Ctx) error {
 	var existingUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&existingUser)
 	if err == nil {
-		return fmt.Errorf("Email address already in use")
+		return c.Status(http.StatusBadRequest).SendString("Email address already in use: " + err.Error())
 	}
 
 	// Insert user document into MongoDB
