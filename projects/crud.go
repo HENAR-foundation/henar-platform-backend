@@ -431,14 +431,14 @@ func RespondToProject(c *fiber.Ctx) error {
 	}
 
 	// Get the project ID from the URL path parameter
-	id := c.Params("id")
-	objId, err := primitive.ObjectIDFromHex(id)
+	projectId := c.Params("id")
+	projectObjId, err := primitive.ObjectIDFromHex(projectId)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
 
 	// Update the project document in MongoDB
-	filter := bson.M{"_id": objId}
+	filter := bson.M{"_id": projectObjId}
 	update := bson.M{"$set": bson.M{"applicants": primitive.M{requesterObjId.Hex(): true}}}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
@@ -446,7 +446,7 @@ func RespondToProject(c *fiber.Ctx) error {
 	}
 
 	// Retrieve the updated project from MongoDB
-	filter = bson.M{"_id": objId}
+	filter = bson.M{"_id": projectObjId}
 	var updatedProject types.Project
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedProject)
 	if err != nil {
@@ -469,9 +469,9 @@ func RespondToProject(c *fiber.Ctx) error {
 	}
 
 	if approver.ProjectsApplications == nil {
-		approver.ProjectsApplications = make(map[primitive.ObjectID]bool)
+		approver.ProjectsApplications = make(map[primitive.ObjectID]primitive.ObjectID)
 	}
-	approver.ProjectsApplications[requesterObjId] = true
+	approver.ProjectsApplications[requesterObjId] = projectObjId
 
 	approverUpdate := bson.M{"$set": approver}
 	_, err = usersCollection.UpdateOne(context.TODO(), approverFilter, approverUpdate)
@@ -509,14 +509,14 @@ func CancelProjectApplication(c *fiber.Ctx) error {
 	}
 
 	// Get the project ID from the URL path parameter
-	id := c.Params("id")
-	objId, err := primitive.ObjectIDFromHex(id)
+	projectId := c.Params("id")
+	projectObjId, err := primitive.ObjectIDFromHex(projectId)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
 
 	// Update the project document in MongoDB
-	filter := bson.M{"_id": objId}
+	filter := bson.M{"_id": projectObjId}
 	update := bson.M{"$pull": bson.M{"applicants": requesterObjId}}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
@@ -524,7 +524,7 @@ func CancelProjectApplication(c *fiber.Ctx) error {
 	}
 
 	// Retrieve the updated project from MongoDB
-	filter = bson.M{"_id": objId}
+	filter = bson.M{"_id": projectObjId}
 	var updatedProject types.Project
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedProject)
 	if err != nil {
@@ -548,7 +548,7 @@ func CancelProjectApplication(c *fiber.Ctx) error {
 
 	delete(approver.ProjectsApplications, requesterObjId)
 	delete(approver.ConfirmedApplications, requesterObjId)
-	approver.RejectedApplicants[requesterObjId] = true
+	approver.RejectedApplicants[requesterObjId] = projectObjId
 
 	approverUpdate := bson.M{"$set": approver}
 	_, err = usersCollection.UpdateOne(context.TODO(), approverFilter, approverUpdate)

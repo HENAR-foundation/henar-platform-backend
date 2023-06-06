@@ -59,9 +59,9 @@ func SignUp(c *fiber.Ctx) error {
 				BlockedUsers:              make(map[primitive.ObjectID]string),
 			},
 			UserProjects: types.UserProjects{
-				ProjectsApplications:  make(map[primitive.ObjectID]bool),
-				ConfirmedApplications: make(map[primitive.ObjectID]bool),
-				RejectedApplicants:    make(map[primitive.ObjectID]bool),
+				ProjectsApplications:  make(map[primitive.ObjectID]primitive.ObjectID),
+				ConfirmedApplications: make(map[primitive.ObjectID]primitive.ObjectID),
+				RejectedApplicants:    make(map[primitive.ObjectID]primitive.ObjectID),
 				CreatedProjects:       make(map[primitive.ObjectID]bool),
 			},
 		},
