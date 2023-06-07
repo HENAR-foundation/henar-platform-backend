@@ -437,26 +437,31 @@ func RespondToProject(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
 
-	// Update the project document in MongoDB
+	// get project
 	filter := bson.M{"_id": projectObjId}
-	update := bson.M{"$set": bson.M{"applicants": primitive.M{requesterObjId.Hex(): true}}}
+	var project types.Project
+	err = collection.FindOne(context.TODO(), filter).Decode(&project)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
+	}
+
+	if project.Applicants == nil {
+		project.Applicants = make(map[primitive.ObjectID]bool)
+	}
+	project.Applicants[requesterObjId] = true
+
+	// Update the project document in MongoDB
+	filter = bson.M{"_id": projectObjId}
+	update := bson.M{"$set": project}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
 	}
 
-	// Retrieve the updated project from MongoDB
-	filter = bson.M{"_id": projectObjId}
-	var updatedProject types.Project
-	err = collection.FindOne(context.TODO(), filter).Decode(&updatedProject)
-	if err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
-	}
-
 	// update approver
 	usersCollection, _ := db.GetCollection("users")
 
-	approverId := updatedProject.CreatedBy
+	approverId := project.CreatedBy
 
 	approverFilter := bson.M{"_id": approverId}
 	var approver types.User
@@ -480,7 +485,7 @@ func RespondToProject(c *fiber.Ctx) error {
 	}
 
 	// Set the response headers and write the response body
-	return c.Status(http.StatusOK).JSON(updatedProject)
+	return c.SendString("Response sended successfully")
 }
 
 // TODO: respond/cancel delete applicants for public request
@@ -501,6 +506,8 @@ func CancelProjectApplication(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
+
+	// TODO: error on update in mongo
 
 	requsterId := c.Locals("user_id").(string)
 	requesterObjId, err := primitive.ObjectIDFromHex(requsterId)

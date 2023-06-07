@@ -268,9 +268,9 @@ func GetUser(c *fiber.Ctx) error {
 		}
 	}
 
-	fmt.Println((user.ConfirmedContactsRequests[userObjId] == "" ||
-		user.ConfirmedApplications[userObjId] == primitive.NilObjectID))
-	fmt.Println(user.ConfirmedApplications[userObjId] == primitive.NilObjectID)
+	// fmt.Println((user.ConfirmedContactsRequests[userObjId] == "" ||
+	// 	user.ConfirmedApplications[userObjId] == primitive.NilObjectID))
+	// fmt.Println(user.ConfirmedApplications[userObjId] == primitive.NilObjectID)
 
 	// hide fields for anon user
 	if userId == nil {
@@ -675,6 +675,10 @@ func RejectContactsRequest(c *fiber.Ctx) error {
 // @Router /users/approve/{id} [get]
 func ApproveProjectRequest(c *fiber.Ctx) error {
 	userCollection, err := db.GetCollection("users")
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
+	}
+
 	projectCollection, err := db.GetCollection("projects")
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
@@ -716,6 +720,8 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	// if user.ProjectsApplications[requesterObjId] {
 
 	// }
+	// primitive.NilObjectID
+
 	delete(user.ProjectsApplications, requesterObjId)
 	if user.ConfirmedApplications == nil {
 		user.ConfirmedApplications = make(map[primitive.ObjectID]primitive.ObjectID)
@@ -759,13 +765,17 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Error connecting to database or updating user"
 // @Router /users/reject/{id} [get]
 func RejectProjectRequest(c *fiber.Ctx) error {
-	collection, err := db.GetCollection("users")
+	userCollection, err := db.GetCollection("users")
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
+	}
+	projectCollection, err := db.GetCollection("projects")
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
 
 	// Get the project ID from the URL path parameter
-	// requesterId, err := primitive.ObjectIDFromHex(c.Params("id"))
+	requesterId, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
@@ -778,7 +788,7 @@ func RejectProjectRequest(c *fiber.Ctx) error {
 	// get approver
 	filter := bson.M{"_id": userId}
 	var user types.User
-	err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	err = userCollection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
@@ -786,15 +796,46 @@ func RejectProjectRequest(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
+	// get project
+	projectId := user.ProjectsApplications[requesterId]
+	filter = bson.M{"_id": projectId}
+	var project types.Project
+	err = projectCollection.FindOne(context.TODO(), filter).Decode(&project)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
+	}
+
+	// TODO: handle one applicant to different project
+
 	// if user.ProjectsApplications[incomingRequestUserId] {
 	// 	delete(user.ProjectsApplications, incomingRequestUserId)
 	// 	user.RejectedApplicants[incomingRequestUserId] = true
 	// }
+	delete(user.ProjectsApplications, requesterId)
+	if user.RejectedApplicants == nil {
+		user.RejectedApplicants = make(map[primitive.ObjectID]primitive.ObjectID)
+	}
+	user.RejectedApplicants[requesterId] = projectId
+
+	delete(project.Applicants, requesterId)
+	if project.RejectedApplicants == nil {
+		project.RejectedApplicants = make(map[primitive.ObjectID]bool)
+	}
+	project.RejectedApplicants[requesterId] = true
+	fmt.Println(project.Applicants)
+
+	// update project
+	projectFilter := bson.M{"_id": projectId}
+	projectUpdate := bson.M{"$set": project}
+	_, err = projectCollection.UpdateOne(context.TODO(), projectFilter, projectUpdate)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
 
 	// update approver
 	filter = bson.M{"_id": userId}
 	update := bson.M{"$set": user}
-	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	_, err = userCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}

@@ -251,7 +251,7 @@ type Project struct {
 	ReasonOfReject       *string                      `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
 	Applicants           map[primitive.ObjectID]bool  `json:"applicants,omitempty" bson:"applicants,omitempty"`
 	SuccessfulApplicants map[primitive.ObjectID]bool  `json:"successful_applicants" bson:"successful_applicants,omitempty"`
-	RejectedApplicants   *[]primitive.ObjectID        `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
+	RejectedApplicants   map[primitive.ObjectID]bool  `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
 }
 
 type Research struct {
