@@ -522,9 +522,20 @@ func CancelProjectApplication(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
 
-	// Update the project document in MongoDB
+	// get project
 	filter := bson.M{"_id": projectObjId}
-	update := bson.M{"$pull": bson.M{"applicants": requesterObjId}}
+	var project types.Project
+	err = collection.FindOne(context.TODO(), filter).Decode(&project)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
+	}
+
+	delete(project.Applicants, requesterObjId)
+	fmt.Println(project.Applicants)
+
+	// Update the project document in MongoDB
+	filter = bson.M{"_id": projectObjId}
+	update := bson.M{"$set": bson.M{"applicants": project.Applicants}}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
@@ -554,8 +565,6 @@ func CancelProjectApplication(c *fiber.Ctx) error {
 	}
 
 	delete(approver.ProjectsApplications, requesterObjId)
-	delete(approver.ConfirmedApplications, requesterObjId)
-	approver.RejectedApplicants[requesterObjId] = projectObjId
 
 	approverUpdate := bson.M{"$set": approver}
 	_, err = usersCollection.UpdateOne(context.TODO(), approverFilter, approverUpdate)
@@ -564,5 +573,5 @@ func CancelProjectApplication(c *fiber.Ctx) error {
 	}
 
 	// Set the response headers and write the response body
-	return c.Status(http.StatusOK).JSON(updatedProject)
+	return c.SendString("Response canceled successfully")
 }
