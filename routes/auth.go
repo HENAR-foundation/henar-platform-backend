@@ -73,8 +73,11 @@ func SignUp(c *fiber.Ctx) error {
 	filter := bson.M{"user_credentials.email": user.UserCredentials.Email}
 	var existingUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&existingUser)
+	fmt.Println(existingUser)
 	if err == nil {
-		return c.Status(http.StatusBadRequest).SendString("Email address already in use: " + err.Error())
+		// return fmt.Errorf("Email address already in use")
+
+		return c.Status(http.StatusBadRequest).SendString("Email address already in use")
 	}
 
 	// Insert user document into MongoDB
