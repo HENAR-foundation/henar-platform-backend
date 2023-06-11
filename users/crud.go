@@ -842,3 +842,82 @@ func RejectProjectRequest(c *fiber.Ctx) error {
 
 	return c.SendString("Done")
 }
+
+// UpdatePassword updates the password for a user.
+// @Summary Update password
+// @Description Updates the password for a user.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {string} string "Password successfully updated"
+// @Failure 400 {string} string "Error parsing request body or validating user"
+// @Failure 404 {string} string "User not found"
+// @Failure 403 {string} string "Permission or ownership error"
+// @Failure 401 {string} string "Wrong credentials"
+// @Failure 500 {string} string "Error connecting to database or updating user"
+// @Router /users/update-password [patch]
+func UpdatePassword(c *fiber.Ctx) error {
+	var requestBody types.PasswordUpdate
+	err := c.BodyParser(&requestBody)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
+	}
+
+	// Validate the required fields
+	v := validator.New()
+	err = v.Struct(requestBody)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("error validating user: " + err.Error())
+	}
+
+	userId := c.Locals("user_id").(string)
+	objId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Error parsing user ID: " + err.Error())
+	}
+
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{"_id": objId}
+
+	var user types.User
+	err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	if userId != user.ID.Hex() {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
+	// Comparing the password with the hash
+	err = bcrypt.CompareHashAndPassword(
+		[]byte(*user.Password),
+		[]byte(*requestBody.Password))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "wrong credentials",
+		})
+	}
+
+	Password, err := bcrypt.GenerateFromPassword([]byte(*requestBody.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
+	}
+	passwordString := string(Password)
+	user.Password = &passwordString
+
+	filter = bson.M{"_id": objId}
+	update := bson.M{"$set": user}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	return c.SendString("Password successfully updated")
+}

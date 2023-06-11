@@ -20,15 +20,20 @@ const (
 )
 
 type UserCredentials struct {
-	Email    string  `json:"email,omitempty" validate:"required,email"`
-	Password *string `json:"password,omitempty" bson:"password,omitempty"`
+	Email    string  `json:"email" validate:"required,email"`
+	Password *string `json:"password" bson:"password,omitempty"`
+}
+
+type PasswordUpdate struct {
+	Password    *string `json:"password" validate:"required"`
+	NewPassword *string `json:"new_password" validate:"required"`
 }
 
 type Contacts struct {
-	Phone     string `json:"phone,omitempty"`
-	Facebook  string `json:"facebook,omitempty"`
-	Instagram string `json:"instagram,omitempty"`
-	Linkedin  string `json:"linkedin,omitempty"`
+	Phone     string `json:"phone"`
+	Facebook  string `json:"facebook"`
+	Instagram string `json:"instagram"`
+	Linkedin  string `json:"linkedin"`
 }
 
 type RequestMessage struct {
@@ -51,25 +56,25 @@ type UserProjects struct {
 
 type UserBody struct {
 	Avatar          string                      `json:"avatar"`
-	FirstName       string                      `json:"first_name,omitempty" bson:"first_name,omitempty"`
-	LastName        string                      `json:"last_name,omitempty" bson:"last_name,omitempty"`
+	FirstName       string                      `json:"first_name" bson:"first_name,omitempty"`
+	LastName        string                      `json:"last_name" bson:"last_name,omitempty"`
 	Description     string                      `json:"description"`
-	Contacts        Contacts                    `json:"contacts,omitempty"`
-	Location        *primitive.ObjectID         `json:"location,omitempty" bson:"location,omitempty"`
-	Role            *Role                       `json:"role,omitempty", bson:"role,omitempty"`
+	Contacts        Contacts                    `json:"contacts"`
+	Location        *primitive.ObjectID         `json:"location" bson:"location,omitempty"`
+	Role            *Role                       `json:"role", bson:"role,omitempty"`
 	Job             string                      `json:"job"`
 	Language        string                      `json:"language,omitempty"`
 	Tags            []primitive.ObjectID        `json:"tags"`
 	Notifications   []primitive.ObjectID        `json:"notification,omitempty" bson:"notification,omitempty"`
 	Events          map[primitive.ObjectID]bool `json:"events" bson:"events"`
 	Researches      map[primitive.ObjectID]bool `json:"researches" bson:"researches"`
-	ContactsRequest `json:"contacts_request,omitempty" bson:"contacts_request"`
-	UserProjects    `json:"user_projects,omitempty" bson:"user_projects"`
+	ContactsRequest `json:"contacts_request" bson:"contacts_request"`
+	UserProjects    `json:"user_projects" bson:"user_projects"`
 }
 
 type User struct {
-	ID              primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	UserCredentials `bson:"user_credentials,omitempty"`
+	ID              primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
+	UserCredentials `bson:"user_credentials"`
 	UserBody        `bson:"user_body"`
 }
 
@@ -96,13 +101,13 @@ type Notification struct {
 }
 
 type Event struct {
-	ID               primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
-	CreatedBy        primitive.ObjectID   `json:"created_by,omitempty" bson:"created_by,omitempty"`
+	ID               primitive.ObjectID   `json:"_id" bson:"_id,omitempty"`
+	CreatedBy        primitive.ObjectID   `json:"created_by" bson:"created_by,omitempty"`
 	Slug             string               `json:"slug"`
 	Cover            string               `json:"cover"`
 	Title            Translations         `json:"title"`
 	Description      Translations         `json:"description"`
-	Location         primitive.ObjectID   `json:"location,omitempty" bson:"location,omitempty"`
+	Location         primitive.ObjectID   `json:"location" bson:"location,omitempty"`
 	Date             time.Time            `json:"date" validate:"required"`
 	TermsOfVisit     Translations         `json:"terms_of_visit" bson:"terms_of_visit"`
 	Tags             []primitive.ObjectID `json:"tags" validate:"required"`
@@ -235,39 +240,39 @@ func ValidateEnum(fl validator.FieldLevel) bool {
 
 // TODO: author can update project moderation_status after reject
 type Project struct {
-	ID                   primitive.ObjectID           `json:"_id,omitempty" bson:"_id,omitempty"`
-	Slug                 *string                      `json:"slug, omitempty" bson:"slug,omitempty"`
-	Covers               []string                     `json:"covers,omitempty" bson:"covers,omitempty"`
-	CreatedBy            primitive.ObjectID           `json:"created_by,omitempty" bson:"created_by,omitempty"`
+	ID                   primitive.ObjectID           `json:"_id" bson:"_id,omitempty"`
+	Slug                 *string                      `json:"slug" bson:"slug,omitempty"`
+	Covers               []string                     `json:"covers" bson:"covers,omitempty"`
+	CreatedBy            primitive.ObjectID           `json:"created_by" bson:"created_by,omitempty"`
 	Title                Translations                 `json:"title"`
 	Description          Translations                 `json:"description"`
 	Objective            Translations                 `json:"objective"`
 	WhoIsNeeded          Translations                 `json:"who_is_needed" bson:"who_is_needed"`
 	Tags                 []primitive.ObjectID         `json:"tags" validate:"required" bson:"tags"`
-	Views                *int64                       `json:"views" bson:"views,omitempty"`
+	Views                *int64                       `json:"views" bson:"views"`
 	HowToHelpTheProject  map[HowToHelpTheProject]bool `json:"how_to_help_the_project" bson:"how_to_help_the_project,omitempty"`
 	ProjectStatus        ProjectStatus                `json:"project_status" bson:"project_status,omitempty"`
-	ModerationStatus     *ModerationStatus            `json:"moderation_status,omitempty" bson:"moderation_status,omitempty"`
-	ReasonOfReject       *string                      `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
-	Applicants           map[primitive.ObjectID]bool  `json:"applicants,omitempty" bson:"applicants,omitempty"`
+	ModerationStatus     *ModerationStatus            `json:"moderation_status" bson:"moderation_status,omitempty"`
+	ReasonOfReject       *string                      `json:"reason_of_reject" bson:"reason_of_reject,omitempty"`
+	Applicants           map[primitive.ObjectID]bool  `json:"applicants" bson:"applicants,omitempty"`
 	SuccessfulApplicants map[primitive.ObjectID]bool  `json:"successful_applicants" bson:"successful_applicants,omitempty"`
-	RejectedApplicants   map[primitive.ObjectID]bool  `json:"rejected_applicants,omitempty" bson:"rejected_applicants,omitempty"`
+	RejectedApplicants   map[primitive.ObjectID]bool  `json:"rejected_applicants" bson:"rejected_applicants,omitempty"`
 }
 
 type Research struct {
-	ID               primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
-	CreatedBy        primitive.ObjectID   `json:"created_by,omitempty" bson:"created_by,omitempty"`
+	ID               primitive.ObjectID   `json:"_id" bson:"_id,omitempty"`
+	CreatedBy        primitive.ObjectID   `json:"created_by" bson:"created_by,omitempty"`
 	Slug             string               `json:"slug"`
 	Title            Translations         `json:"title"`
 	Description      Translations         `json:"description"`
 	Tags             []primitive.ObjectID `json:"tags" validate:"required"`
 	Link             string               `json:"link" validate:"required"`
-	ModerationStatus *ModerationStatus    `json:"moderation_status,omitempty" bson:"moderation_status,omitempty"`
-	ReasonOfReject   *string              `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
+	ModerationStatus *ModerationStatus    `json:"moderation_status" bson:"moderation_status,omitempty"`
+	ReasonOfReject   *string              `json:"reason_of_reject" bson:"reason_of_reject,omitempty"`
 }
 
 type Statistic struct {
-	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	ID        primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
 	Title     Translations       `json:"translations"`
 	Year      int64              `json:"year" validate:"required"`
 	Count     int64              `json:"count" validate:"required"`
@@ -276,7 +281,7 @@ type Statistic struct {
 
 // TODO: create location on user and event create
 type Location struct {
-	ID         primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	ID         primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
 	Value      string             `json:"value" validate:"required"`
 	Country    string             `json:"country" validate:"required"`
 	Region     string             `json:"region"`
@@ -292,7 +297,7 @@ type Suggestions struct {
 }
 
 type Tag struct {
-	ID    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	ID    primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
 	Title Translations       `json:"title"`
 }
 

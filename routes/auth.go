@@ -17,7 +17,6 @@ import (
 )
 
 // TODO: update create user and sing up to db method
-// TODO: create user return password, fix it
 func SignUp(c *fiber.Ctx) error {
 	var uc types.User
 	err := c.BodyParser(&uc)
@@ -73,10 +72,7 @@ func SignUp(c *fiber.Ctx) error {
 	filter := bson.M{"user_credentials.email": user.UserCredentials.Email}
 	var existingUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&existingUser)
-	fmt.Println(existingUser)
 	if err == nil {
-		// return fmt.Errorf("Email address already in use")
-
 		return c.Status(http.StatusBadRequest).SendString("Email address already in use")
 	}
 
@@ -199,4 +195,53 @@ func Check(c *fiber.Ctx) error {
 	utils.UpdateResultForUserRole(&user, fieldsToUpdate)
 
 	return c.Status(http.StatusOK).JSON(user)
+}
+
+func ResetPassword(c *fiber.Ctx) error {
+	// var requestBody types.User
+	// err := c.BodyParser(&requestBody)
+	// if err != nil {
+	// 	return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
+	// }
+
+	// // TODO: get user by email
+	// collection, _ := db.GetCollection("users")
+	// filter := bson.M{"user_credentials.email": requestBody.UserCredentials.Email}
+	// var user types.User
+	// err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	// if err == nil {
+	// 	return c.Status(http.StatusBadRequest).SendString("Email address already in use")
+	// }
+
+	// // filter := bson.M{"_id": objId}
+	// // var user types.User
+	// // err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	// // if err != nil {
+	// // 	if err == mongo.ErrNoDocuments {
+	// // 		return c.Status(http.StatusNotFound).SendString("User not found")
+	// // 	}
+	// // 	return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	// // }
+
+	// // if userId != user.ID.Hex() {
+	// // 	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+	// // 		"message": "Permission or ownership error",
+	// // 	})
+	// // }
+
+	// Password, err := bcrypt.GenerateFromPassword([]byte(*requestBody.Password), bcrypt.DefaultCost)
+	// if err != nil {
+	// 	return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
+	// }
+	// passwordString := string(Password)
+	// user.Password = &passwordString
+
+	// filter = bson.M{"_id": objId}
+	// update := bson.M{"$set": user}
+	// _, err = collection.UpdateOne(context.TODO(), filter, update)
+	// if err != nil {
+	// 	return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	// }
+
+	return c.SendString("Password successfully updated")
 }
