@@ -408,6 +408,68 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/update-password": {
+            "patch": {
+                "description": "Updates the password for a user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password successfully updated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Error parsing request body or validating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Wrong credentials",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Permission or ownership error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error connecting to database or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/users/{id}": {
             "patch": {
                 "description": "Updates an existing user in the database",
@@ -2426,9 +2488,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "applicants": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
                 },
                 "covers": {
@@ -2462,18 +2524,18 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "rejected_applicants": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
                 },
                 "slug": {
                     "type": "string"
                 },
                 "successful_applicants": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
                 },
                 "tags": {
@@ -2633,8 +2695,7 @@ const docTemplate = `{
         "types.User": {
             "type": "object",
             "required": [
-                "email",
-                "password"
+                "email"
             ],
             "properties": {
                 "_id": {
@@ -2661,13 +2722,16 @@ const docTemplate = `{
                         "type": "boolean"
                     }
                 },
-                "full_name": {
-                    "$ref": "#/definitions/types.Translations"
+                "first_name": {
+                    "type": "string"
                 },
                 "job": {
                     "type": "string"
                 },
                 "language": {
+                    "type": "string"
+                },
+                "last_name": {
                     "type": "string"
                 },
                 "location": {
@@ -2723,13 +2787,16 @@ const docTemplate = `{
                         "type": "boolean"
                     }
                 },
-                "full_name": {
-                    "$ref": "#/definitions/types.Translations"
+                "first_name": {
+                    "type": "string"
                 },
                 "job": {
                     "type": "string"
                 },
                 "language": {
+                    "type": "string"
+                },
+                "last_name": {
                     "type": "string"
                 },
                 "location": {
@@ -2767,7 +2834,7 @@ const docTemplate = `{
                 "confirmed_applications": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "boolean"
+                        "type": "string"
                     }
                 },
                 "created_projects": {
@@ -2779,13 +2846,13 @@ const docTemplate = `{
                 "projects_applications": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "boolean"
+                        "type": "string"
                     }
                 },
                 "rejected_applicants": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "boolean"
+                        "type": "string"
                     }
                 }
             }

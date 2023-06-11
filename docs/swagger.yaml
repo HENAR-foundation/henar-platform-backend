@@ -106,9 +106,9 @@ definitions:
       _id:
         type: string
       applicants:
-        items:
-          type: string
-        type: array
+        additionalProperties:
+          type: boolean
+        type: object
       covers:
         items:
           type: string
@@ -130,15 +130,15 @@ definitions:
       reason_of_reject:
         type: string
       rejected_applicants:
-        items:
-          type: string
-        type: array
+        additionalProperties:
+          type: boolean
+        type: object
       slug:
         type: string
       successful_applicants:
-        items:
-          type: string
-        type: array
+        additionalProperties:
+          type: boolean
+        type: object
       tags:
         items:
           type: string
@@ -264,11 +264,13 @@ definitions:
         additionalProperties:
           type: boolean
         type: object
-      full_name:
-        $ref: '#/definitions/types.Translations'
+      first_name:
+        type: string
       job:
         type: string
       language:
+        type: string
+      last_name:
         type: string
       location:
         type: string
@@ -292,7 +294,6 @@ definitions:
         $ref: '#/definitions/types.UserProjects'
     required:
     - email
-    - password
     type: object
   types.UserBody:
     properties:
@@ -308,11 +309,13 @@ definitions:
         additionalProperties:
           type: boolean
         type: object
-      full_name:
-        $ref: '#/definitions/types.Translations'
+      first_name:
+        type: string
       job:
         type: string
       language:
+        type: string
+      last_name:
         type: string
       location:
         type: string
@@ -337,7 +340,7 @@ definitions:
     properties:
       confirmed_applications:
         additionalProperties:
-          type: boolean
+          type: string
         type: object
       created_projects:
         additionalProperties:
@@ -345,11 +348,11 @@ definitions:
         type: object
       projects_applications:
         additionalProperties:
-          type: boolean
+          type: string
         type: object
       rejected_applicants:
         additionalProperties:
-          type: boolean
+          type: string
         type: object
     type: object
 host: localhost:8080
@@ -651,6 +654,47 @@ paths:
           schema:
             type: string
       summary: Send contact request
+      tags:
+      - users
+  /users/update-password:
+    patch:
+      consumes:
+      - application/json
+      description: Updates the password for a user.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password successfully updated
+          schema:
+            type: string
+        "400":
+          description: Error parsing request body or validating user
+          schema:
+            type: string
+        "401":
+          description: Wrong credentials
+          schema:
+            type: string
+        "403":
+          description: Permission or ownership error
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Error connecting to database or updating user
+          schema:
+            type: string
+      summary: Update password
       tags:
       - users
   /v1/events:

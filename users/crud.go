@@ -843,6 +843,20 @@ func RejectProjectRequest(c *fiber.Ctx) error {
 	return c.SendString("Done")
 }
 
+// UpdatePassword updates the password for a user.
+// @Summary Update password
+// @Description Updates the password for a user.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {string} string "Password successfully updated"
+// @Failure 400 {string} string "Error parsing request body or validating user"
+// @Failure 404 {string} string "User not found"
+// @Failure 403 {string} string "Permission or ownership error"
+// @Failure 401 {string} string "Wrong credentials"
+// @Failure 500 {string} string "Error connecting to database or updating user"
+// @Router /users/update-password [patch]
 func UpdatePassword(c *fiber.Ctx) error {
 	var requestBody types.PasswordUpdate
 	err := c.BodyParser(&requestBody)
