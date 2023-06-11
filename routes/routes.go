@@ -33,6 +33,7 @@ func Setup(app *fiber.App) {
 	authGroup.Post("/signin", SignIn)
 	authGroup.Get("/signout", SignOut)
 	authGroup.Get("/check", AuthorMiddleware, Check)
+	authGroup.Patch("/reset-password", ResetPassword)
 
 	// Locations routes
 	locationsGroup := app.Group("/v1/locations")
@@ -105,6 +106,7 @@ func Setup(app *fiber.App) {
 	usersGroup.Post("", users.CreateUser)
 
 	usersGroupSecured := app.Group("/v1/users", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
+	usersGroupSecured.Patch("/update-password", users.UpdatePassword)
 	usersGroupSecured.Patch("/:id", users.UpdateUser)
 	usersGroupSecured.Delete("/:id", users.DeleteUser)
 

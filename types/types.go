@@ -24,6 +24,11 @@ type UserCredentials struct {
 	Password *string `json:"password,omitempty" bson:"password,omitempty"`
 }
 
+type PasswordUpdate struct {
+	Password    *string `json:"password" validate:"required"`
+	NewPassword *string `json:"new_password" validate:"required"`
+}
+
 type Contacts struct {
 	Phone     string `json:"phone,omitempty"`
 	Facebook  string `json:"facebook,omitempty"`
