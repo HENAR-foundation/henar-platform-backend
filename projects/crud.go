@@ -300,6 +300,9 @@ func UpdateProject(c *fiber.Ctx) error {
 				"message": "Permission or ownership error",
 			})
 		}
+		pending := types.Pending
+
+		updateBody.ModerationStatus = &pending
 	}
 
 	slugText := utils.CreateSlug(updateBody.Title)
