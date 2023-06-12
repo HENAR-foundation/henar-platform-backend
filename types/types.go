@@ -24,6 +24,15 @@ type UserCredentials struct {
 	Password *string `json:"password" bson:"password,omitempty"`
 }
 
+type ForgotPassword struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type ResetPassword struct {
+	Password        *string `json:"password" validate:"required"`
+	PasswordConfirm *string `json:"password_confirm" validate:"required"`
+}
+
 type PasswordUpdate struct {
 	Password    *string `json:"password" validate:"required"`
 	NewPassword *string `json:"new_password" validate:"required"`
@@ -73,9 +82,11 @@ type UserBody struct {
 }
 
 type User struct {
-	ID              primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
-	UserCredentials `bson:"user_credentials"`
-	UserBody        `bson:"user_body"`
+	ID                 primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
+	PasswordResetToken string             `bson:"password_reset_token"`
+	PasswordResetAt    time.Time          `bson:"password_reset_at"`
+	UserCredentials    `bson:"user_credentials"`
+	UserBody           `bson:"user_body"`
 }
 
 type NotificationStatus int
