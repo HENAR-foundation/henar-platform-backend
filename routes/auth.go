@@ -7,6 +7,7 @@ import (
 	"henar-backend/types"
 	"henar-backend/utils"
 	"net/http"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -197,51 +198,114 @@ func Check(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(user)
 }
 
+// ForgotPassword rejects a project request for the user.
+// @Summary Forgot password
+// @Description Sends a password reset email to the user with the specified email address.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body types.ForgotPassword true "Forgot password request body"
+// @Success 200 {string} string "You will receive a reset email if a user with that email exists"
+// @Failure 400 {string} string "Error parsing request body or passwords do not match"
+// @Failure 500 {string} string "Error retrieving user or updating user"
+// @Router /auth/forgot-password [post]
+func ForgotPassword(c *fiber.Ctx) error {
+	var requestBody types.ForgotPassword
+	err := c.BodyParser(&requestBody)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
+	}
+
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{"user_credentials.email": requestBody.Email}
+	var user types.User
+	err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.SendString("You will receive a reset email if user with that email exist")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	passwordResetToken := "resetToken"
+
+	user.PasswordResetToken = passwordResetToken
+	user.PasswordResetAt = time.Now().Add(time.Minute * 15)
+
+	filter = bson.M{"_id": user.ID}
+	update := bson.M{"$set": user}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	return c.SendString("You will receive a reset email if user with that email exist")
+}
+
+// ResetPassword rejects a project request for the user.
+// @Summary Reset password
+// @Description Resets the password for the user using the provided reset token.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param resettoken path string true "Reset token"
+// @Param request body types.ResetPassword true "Reset password request body"
+// @Success 200 {string} string "Password successfully updated"
+// @Failure 400 {string} string "The reset token is invalid or has expired, or error parsing request body or passwords do not match"
+// @Failure 500 {string} string "Error retrieving user or updating user"
+// @Router /auth/reset-password/{token} [post]
 func ResetPassword(c *fiber.Ctx) error {
-	// var requestBody types.User
-	// err := c.BodyParser(&requestBody)
-	// if err != nil {
-	// 	return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
-	// }
+	var payload types.ResetPassword
+	err := c.BodyParser(&payload)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
+	}
 
-	// // TODO: get user by email
-	// collection, _ := db.GetCollection("users")
-	// filter := bson.M{"user_credentials.email": requestBody.UserCredentials.Email}
-	// var user types.User
-	// err = collection.FindOne(context.TODO(), filter).Decode(&user)
-	// if err == nil {
-	// 	return c.Status(http.StatusBadRequest).SendString("Email address already in use")
-	// }
+	// Validate the required fields
+	v := validator.New()
+	err = v.Struct(payload)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("error validating user: " + err.Error())
+	}
+	if *payload.Password != *payload.PasswordConfirm {
+		return c.Status(http.StatusBadRequest).SendString("Passwords do not match")
+	}
 
-	// // filter := bson.M{"_id": objId}
-	// // var user types.User
-	// // err = collection.FindOne(context.TODO(), filter).Decode(&user)
-	// // if err != nil {
-	// // 	if err == mongo.ErrNoDocuments {
-	// // 		return c.Status(http.StatusNotFound).SendString("User not found")
-	// // 	}
-	// // 	return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
-	// // }
+	resetToken := c.Params("token")
 
-	// // if userId != user.ID.Hex() {
-	// // 	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-	// // 		"message": "Permission or ownership error",
-	// // 	})
-	// // }
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{
+		"password_reset_token": resetToken,
+		"password_reset_at":    bson.M{"$gt": time.Now()},
+	}
+	var user types.User
+	err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusBadRequest).SendString("The reset token is invalid or has expired")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
 
-	// Password, err := bcrypt.GenerateFromPassword([]byte(*requestBody.Password), bcrypt.DefaultCost)
-	// if err != nil {
-	// 	return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
-	// }
-	// passwordString := string(Password)
-	// user.Password = &passwordString
+	Password, err := bcrypt.GenerateFromPassword(
+		[]byte(*payload.Password),
+		bcrypt.DefaultCost,
+	)
+	if err != nil {
+		return fmt.Errorf("Error hashing password: %w", err)
+	}
 
-	// filter = bson.M{"_id": objId}
-	// update := bson.M{"$set": user}
-	// _, err = collection.UpdateOne(context.TODO(), filter, update)
-	// if err != nil {
-	// 	return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
-	// }
+	passwordString := string(Password)
+
+	user.Password = &passwordString
+	user.PasswordResetToken = ""
+
+	filter = bson.M{"_id": user.ID}
+	update := bson.M{"$set": user}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
 
 	return c.SendString("Password successfully updated")
 }

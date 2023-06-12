@@ -298,30 +298,6 @@ func GetUser(c *fiber.Ctx) error {
 		}
 	}
 
-	// check access to requests and projects
-	// can I show these fields for confirmed user?
-	// fmt.Println(user.ConfirmedContactsRequests[userObjId])
-	// if userRole != "admin" ||
-	// 	user.ConfirmedApplications[userObjId] ||
-	// 	user.ConfirmedContactsRequests[userObjId] != "" ||
-	// 	userId != user.ID {
-	// 	fmt.Println(3, "admin or confirmed or user")
-	// 	fmt.Println(userRole != "admin")
-	// 	fmt.Println(userId != user.ID)
-
-	// 	fieldsToUpdate := []string{"ContactsRequest", "UserProjects", "Contacts", "UserCredentials", "Location"}
-	// 	utils.UpdateResultForUserRole(&user, fieldsToUpdate)
-	// }
-
-	// check access to contacts
-	// if userRole != "admin" ||
-	// 	user.ConfirmedContactsRequests[userObjId] != "" ||
-	// 	userId != user.ID {
-	// 	fmt.Println(4)
-	// 	fieldsToUpdate := []string{"Contacts", "UserCredentials"}
-	// 	utils.UpdateResultForUserRole(&user, fieldsToUpdate)
-	// }
-
 	// Set the response headers and write the response body
 	return c.Status(http.StatusOK).JSON(user)
 }

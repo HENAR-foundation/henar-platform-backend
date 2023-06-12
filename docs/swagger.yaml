@@ -67,6 +67,13 @@ definitions:
       url:
         type: string
     type: object
+  types.ForgotPassword:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   types.Location:
     properties:
       _id:
@@ -197,6 +204,16 @@ definitions:
     - link
     - tags
     type: object
+  types.ResetPassword:
+    properties:
+      password:
+        type: string
+      password_confirm:
+        type: string
+    required:
+    - password
+    - password_confirm
+    type: object
   types.Role:
     enum:
     - admin
@@ -280,6 +297,10 @@ definitions:
         type: array
       password:
         type: string
+      passwordResetAt:
+        type: string
+      passwordResetToken:
+        type: string
       researches:
         additionalProperties:
           type: boolean
@@ -361,6 +382,73 @@ info:
   title: Henar
   version: "1.0"
 paths:
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Sends a password reset email to the user with the specified email
+        address.
+      parameters:
+      - description: Forgot password request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.ForgotPassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: You will receive a reset email if a user with that email exists
+          schema:
+            type: string
+        "400":
+          description: Error parsing request body or passwords do not match
+          schema:
+            type: string
+        "500":
+          description: Error retrieving user or updating user
+          schema:
+            type: string
+      summary: Forgot password
+      tags:
+      - auth
+  /auth/reset-password/{token}:
+    post:
+      consumes:
+      - application/json
+      description: Resets the password for the user using the provided reset token.
+      parameters:
+      - description: Reset token
+        in: path
+        name: resettoken
+        required: true
+        type: string
+      - description: Reset password request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.ResetPassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password successfully updated
+          schema:
+            type: string
+        "400":
+          description: The reset token is invalid or has expired, or error parsing
+            request body or passwords do not match
+          schema:
+            type: string
+        "500":
+          description: Error retrieving user or updating user
+          schema:
+            type: string
+      summary: Reset password
+      tags:
+      - auth
   /projects/cancel/{id}:
     get:
       consumes:

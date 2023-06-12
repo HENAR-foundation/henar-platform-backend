@@ -16,6 +16,105 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/forgot-password": {
+            "post": {
+                "description": "Sends a password reset email to the user with the specified email address.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Forgot password",
+                "parameters": [
+                    {
+                        "description": "Forgot password request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.ForgotPassword"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "You will receive a reset email if a user with that email exists",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Error parsing request body or passwords do not match",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error retrieving user or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset-password/{token}": {
+            "post": {
+                "description": "Resets the password for the user using the provided reset token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reset token",
+                        "name": "resettoken",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Reset password request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.ResetPassword"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password successfully updated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "The reset token is invalid or has expired, or error parsing request body or passwords do not match",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error retrieving user or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/projects/cancel/{id}": {
             "get": {
                 "description": "Cancels the user's application for the specified project.",
@@ -2429,6 +2528,17 @@ const docTemplate = `{
                 }
             }
         },
+        "types.ForgotPassword": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
         "types.Location": {
             "type": "object",
             "required": [
@@ -2619,6 +2729,21 @@ const docTemplate = `{
                 }
             }
         },
+        "types.ResetPassword": {
+            "type": "object",
+            "required": [
+                "password",
+                "password_confirm"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "password_confirm": {
+                    "type": "string"
+                }
+            }
+        },
         "types.Role": {
             "type": "string",
             "enum": [
@@ -2744,6 +2869,12 @@ const docTemplate = `{
                     }
                 },
                 "password": {
+                    "type": "string"
+                },
+                "passwordResetAt": {
+                    "type": "string"
+                },
+                "passwordResetToken": {
                     "type": "string"
                 },
                 "researches": {
