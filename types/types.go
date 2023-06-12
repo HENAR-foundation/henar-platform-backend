@@ -21,7 +21,7 @@ const (
 
 type UserCredentials struct {
 	Email    string  `json:"email" validate:"required,email"`
-	Password *string `json:"password" bson:"password,omitempty"`
+	Password *string `json:"password,omitempty" bson:"password,omitempty"`
 }
 
 type ForgotPassword struct {
@@ -83,8 +83,8 @@ type UserBody struct {
 
 type User struct {
 	ID                 primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
-	PasswordResetToken string             `bson:"password_reset_token"`
-	PasswordResetAt    time.Time          `bson:"password_reset_at"`
+	PasswordResetToken string             `json:"-" bson:"password_reset_token"`
+	PasswordResetAt    time.Time          `json:"-" bson:"password_reset_at"`
 	UserCredentials    `bson:"user_credentials"`
 	UserBody           `bson:"user_body"`
 }

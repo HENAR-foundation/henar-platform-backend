@@ -160,15 +160,9 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	if updateBody.Password != nil {
-		Password, err := bcrypt.GenerateFromPassword([]byte(*updateBody.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
-		}
-		passwordString := string(Password)
-		updateBody.Password = &passwordString
-	} else {
-		updateBody.Password = existingUser.Password
+		return c.Status(http.StatusBadRequest).SendString("Fields validation error")
 	}
+	updateBody.Password = existingUser.Password
 
 	// check unique email
 	filter = bson.M{"user_credentials.email": updateBody.Email}
