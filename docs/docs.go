@@ -16,6 +16,193 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/forgot-password": {
+            "post": {
+                "description": "Sends a password reset email to the user with the specified email address.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Forgot password",
+                "parameters": [
+                    {
+                        "description": "Forgot password request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.ForgotPassword"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "You will receive a reset email if a user with that email exists",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Error parsing request body or passwords do not match",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error retrieving user or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset-password/{token}": {
+            "post": {
+                "description": "Resets the password for the user using the provided reset token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reset token",
+                        "name": "resettoken",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Reset password request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.ResetPassword"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password successfully updated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "The reset token is invalid or has expired, or error parsing request body or passwords do not match",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error retrieving user or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects/cancel/{id}": {
+            "get": {
+                "description": "Cancels the user's application for the specified project.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Cancel project application",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Project"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID or project ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error connecting to database or updating/retrieving project",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects/respond/{id}": {
+            "get": {
+                "description": "Adds the current user as an applicant to the specified project.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Respond to a project",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Project"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID or project ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error connecting to database or updating/retrieving project",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "post": {
                 "description": "Creates a new user in the database",
@@ -44,6 +231,337 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/approve-contacts-request/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Approves a contact request from the specified user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Approve contact request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Done",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid project ID or user ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error connecting to database or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/approve/{id}": {
+            "get": {
+                "description": "Approves a project request for the user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Approve project request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request approved successfully.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid project ID or user ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error connecting to database or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/reject-contacts-request/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Rejects a contact request from the specified user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Reject contact request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Done",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid project ID or user ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error connecting to database or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/reject/{id}": {
+            "get": {
+                "description": "Rejects a project request for the user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Reject project request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request rejected successfully.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid project ID or user ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error connecting to database or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/request-contacts/{id}": {
+            "post": {
+                "description": "Sends a contact request to the specified user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Send contact request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.RequestMessage"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Contact request added successfully.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid project ID or user ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error connecting to database or updating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/update-password": {
+            "patch": {
+                "description": "Updates the password for a user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password successfully updated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Error parsing request body or validating user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Wrong credentials",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Permission or ownership error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error connecting to database or updating user",
                         "schema": {
                             "type": "string"
                         }
@@ -374,6 +892,38 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/files/upload": {
+            "post": {
+                "description": "Upload a static file to Henar DigitalOcean failopoika's and get the uri",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "files"
+                ],
+                "summary": "Upload file",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.FileResponce"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error reading file",
                         "schema": {
                             "type": "string"
                         }
@@ -725,6 +1275,18 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Location ID to filter by",
                         "name": "location",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Project statuses",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "How to help the project",
+                        "name": "help",
                         "in": "query"
                     }
                 ],
@@ -1864,22 +2426,66 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "types.Contacts": {
+            "type": "object",
+            "properties": {
+                "facebook": {
+                    "type": "string"
+                },
+                "instagram": {
+                    "type": "string"
+                },
+                "linkedin": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.ContactsRequest": {
+            "type": "object",
+            "properties": {
+                "blocked_users": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "confirmed_contacts_requests": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "incoming_contact_requests": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "outgoing_contact_requests": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "types.Event": {
             "type": "object",
             "required": [
-                "author",
                 "date",
-                "location",
                 "tags"
             ],
             "properties": {
                 "_id": {
                     "type": "string"
                 },
-                "author": {
+                "cover": {
                     "type": "string"
                 },
-                "cover": {
+                "created_by": {
                     "type": "string"
                 },
                 "date": {
@@ -1911,6 +2517,25 @@ const docTemplate = `{
                 },
                 "title": {
                     "$ref": "#/definitions/types.Translations"
+                }
+            }
+        },
+        "types.FileResponce": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.ForgotPassword": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
                 }
             }
         },
@@ -1951,22 +2576,21 @@ const docTemplate = `{
             }
         },
         "types.ModerationStatus": {
-            "type": "integer",
+            "type": "string",
             "enum": [
-                0,
-                1,
-                2
+                "pending",
+                "approved",
+                "rejected"
             ],
             "x-enum-varnames": [
-                "ForRevision",
-                "Accepted",
+                "Pending",
+                "Approved",
                 "Rejected"
             ]
         },
         "types.Project": {
             "type": "object",
             "required": [
-                "author",
                 "tags"
             ],
             "properties": {
@@ -1974,13 +2598,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "applicants": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
-                },
-                "author": {
-                    "type": "string"
                 },
                 "covers": {
                     "type": "array",
@@ -1988,8 +2609,17 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "created_by": {
+                    "type": "string"
+                },
                 "description": {
                     "$ref": "#/definitions/types.Translations"
+                },
+                "how_to_help_the_project": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
+                    }
                 },
                 "moderation_status": {
                     "$ref": "#/definitions/types.ModerationStatus"
@@ -1997,22 +2627,25 @@ const docTemplate = `{
                 "objective": {
                     "$ref": "#/definitions/types.Translations"
                 },
+                "project_status": {
+                    "$ref": "#/definitions/types.ProjectStatus"
+                },
                 "reason_of_reject": {
                     "type": "string"
                 },
                 "rejected_applicants": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
                 },
                 "slug": {
                     "type": "string"
                 },
                 "successful_applicants": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
                 },
                 "tags": {
@@ -2032,10 +2665,34 @@ const docTemplate = `{
                 }
             }
         },
+        "types.ProjectStatus": {
+            "type": "string",
+            "enum": [
+                "ideation",
+                "implementation",
+                "launchAndExecution",
+                "perfomanceAndControl",
+                "closed"
+            ],
+            "x-enum-varnames": [
+                "Ideation",
+                "Implementation",
+                "LaunchAndExecution",
+                "PerfomanceAndControl",
+                "Closed"
+            ]
+        },
+        "types.RequestMessage": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "types.Research": {
             "type": "object",
             "required": [
-                "author",
                 "link",
                 "tags"
             ],
@@ -2043,7 +2700,7 @@ const docTemplate = `{
                 "_id": {
                     "type": "string"
                 },
-                "author": {
+                "created_by": {
                     "type": "string"
                 },
                 "description": {
@@ -2069,6 +2726,21 @@ const docTemplate = `{
                 },
                 "title": {
                     "$ref": "#/definitions/types.Translations"
+                }
+            }
+        },
+        "types.ResetPassword": {
+            "type": "object",
+            "required": [
+                "password",
+                "password_confirm"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "password_confirm": {
+                    "type": "string"
                 }
             }
         },
@@ -2157,35 +2829,11 @@ const docTemplate = `{
                 "avatar": {
                     "type": "string"
                 },
-                "blocked_users": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "confirmed_applications": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "confirmed_contacts_requests": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "contacts": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "$ref": "#/definitions/types.Contacts"
                 },
-                "created_projects": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "contacts_request": {
+                    "$ref": "#/definitions/types.ContactsRequest"
                 },
                 "description": {
                     "type": "string"
@@ -2193,127 +2841,28 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "full_name": {
-                    "type": "string"
-                },
-                "incoming_contact_requests": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                "events": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
                 },
+                "first_name": {
+                    "type": "string"
+                },
                 "job": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "last_name": {
                     "type": "string"
                 },
                 "location": {
                     "type": "string"
                 },
                 "notification": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "outgoing_contact_requests": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "projects_applications": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "projects_history": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "role": {
-                    "$ref": "#/definitions/types.Role"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "types.UserBody": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "_id": {
-                    "type": "string"
-                },
-                "avatar": {
-                    "type": "string"
-                },
-                "blocked_users": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "confirmed_applications": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "confirmed_contacts_requests": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "contacts": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "created_projects": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "description": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string"
-                },
-                "incoming_contact_requests": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "job": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "notification": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "outgoing_contact_requests": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -2322,16 +2871,16 @@ const docTemplate = `{
                 "password": {
                     "type": "string"
                 },
-                "projects_applications": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "passwordResetAt": {
+                    "type": "string"
                 },
-                "projects_history": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                "passwordResetToken": {
+                    "type": "string"
+                },
+                "researches": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
                     }
                 },
                 "role": {
@@ -2340,6 +2889,100 @@ const docTemplate = `{
                 "tags": {
                     "type": "array",
                     "items": {
+                        "type": "string"
+                    }
+                },
+                "user_projects": {
+                    "$ref": "#/definitions/types.UserProjects"
+                }
+            }
+        },
+        "types.UserBody": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "contacts": {
+                    "$ref": "#/definitions/types.Contacts"
+                },
+                "contacts_request": {
+                    "$ref": "#/definitions/types.ContactsRequest"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "events": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
+                    }
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "job": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "notification": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "researches": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
+                    }
+                },
+                "role": {
+                    "$ref": "#/definitions/types.Role"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_projects": {
+                    "$ref": "#/definitions/types.UserProjects"
+                }
+            }
+        },
+        "types.UserProjects": {
+            "type": "object",
+            "properties": {
+                "confirmed_applications": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "created_projects": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
+                    }
+                },
+                "projects_applications": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "rejected_applicants": {
+                    "type": "object",
+                    "additionalProperties": {
                         "type": "string"
                     }
                 }

@@ -120,6 +120,12 @@ func GetTag(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/tags [post]
 func CreateTag(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	collection, _ := db.GetCollection("tags")
 
 	// Parse request body into tag struct
@@ -133,7 +139,7 @@ func CreateTag(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(tag)
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Error retrieving created tag: " + err.Error()})
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Error retrieving created tag: " + err.Error()})
 	}
 
 	// Insert tag document into MongoDB
@@ -175,6 +181,12 @@ func CreateTag(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/tags/{id} [patch]
 func UpdateTag(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	collection, _ := db.GetCollection("tags")
 
 	// Get the tag ID from the URL path parameter
@@ -234,6 +246,12 @@ func UpdateTag(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/tags/{id} [delete]
 func DeleteTag(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	collection, _ := db.GetCollection("tags")
 
 	// Get the tag ID from the URL path parameter

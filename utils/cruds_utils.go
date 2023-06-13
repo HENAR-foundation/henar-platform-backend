@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"henar-backend/types"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -12,6 +13,40 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+func UpdateResultForUserRole(result interface{}, fieldsToUpdate []string) {
+	resultValue := reflect.ValueOf(result)
+
+	if resultValue.Kind() != reflect.Ptr || resultValue.Elem().Kind() != reflect.Struct {
+		// Handle error: result is not a pointer to a struct
+		return
+	}
+
+	resultElem := resultValue.Elem()
+
+	for _, field := range fieldsToUpdate {
+		fieldValue := resultElem.FieldByName(field)
+
+		if fieldValue.IsValid() && fieldValue.CanSet() {
+			fieldValue.Set(reflect.Zero(fieldValue.Type()))
+		}
+	}
+}
+
+func UpdateResultsForUserRole(results interface{}, fieldsToUpdate []string) {
+	resultsValue := reflect.ValueOf(results)
+
+	if resultsValue.Kind() != reflect.Slice {
+		// TODO: Handle error: results is not a slice
+		return
+	}
+
+	for i := 0; i < resultsValue.Len(); i++ {
+		resultValue := resultsValue.Index(i)
+
+		UpdateResultForUserRole(resultValue.Addr().Interface(), fieldsToUpdate)
+	}
+}
 
 func GetSort(c *fiber.Ctx) primitive.D {
 	sort := c.Query("sort")
@@ -53,6 +88,17 @@ func GetFilter(c *fiber.Ctx) (bson.M, error) {
 	name := c.Query("name")
 	if name != "" {
 		filter["full_name"] = primitive.Regex{Pattern: name, Options: "i"}
+	}
+
+	projectStatus := c.Query("status")
+	if projectStatus != "" {
+		filter["project_status"] = primitive.Regex{Pattern: projectStatus, Options: "i"}
+	}
+
+	// TODO: check filter for new array data type
+	howToHelpTheProject := c.Query("help")
+	if howToHelpTheProject != "" {
+		filter["how_to_help_the_project"] = primitive.Regex{Pattern: howToHelpTheProject, Options: "i"}
 	}
 
 	job := c.Query("job")

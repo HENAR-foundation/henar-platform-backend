@@ -45,7 +45,7 @@ func GetStatistics(c *fiber.Ctx) error {
 	// Get the results from the cursor
 	var results []types.Statistic
 	if err = cursor.All(context.TODO(), &results); err != nil {
-		panic(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error finding statistics")
 	}
 
 	// Marshal the statistic struct to JSON format
@@ -120,6 +120,12 @@ func GetStatistic(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/statistics [post]
 func CreateStatistic(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	collection, _ := db.GetCollection("statistics")
 
 	// Parse request body into statistic struct
@@ -133,7 +139,7 @@ func CreateStatistic(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(statistic)
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Error retrieving created statistic: " + err.Error())
+		return c.Status(http.StatusBadRequest).SendString("Error retrieving created statistic: " + err.Error())
 	}
 
 	// Insert statistic document into MongoDB
@@ -169,6 +175,12 @@ func CreateStatistic(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/statistics/{id} [patch]
 func UpdateStatistic(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	collection, _ := db.GetCollection("statistics")
 
 	// Get the statistic ID from the URL path parameter
@@ -224,6 +236,12 @@ func UpdateStatistic(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Error deleting statistic: <error message>"
 // @Router /v1/statistics/{id} [delete]
 func DeleteStatistic(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
 	collection, _ := db.GetCollection("statistics")
 
 	// Get the statistic ID from the URL path parameter

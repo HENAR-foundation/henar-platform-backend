@@ -50,6 +50,7 @@ func GetResearches(c *fiber.Ctx) error {
 	if len(sort) != 0 {
 		findOptions.SetSort(sort)
 	}
+	// TODO: GET: User can't get pending | rejected entity
 
 	// Query the database and get the cursor
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)
@@ -60,7 +61,11 @@ func GetResearches(c *fiber.Ctx) error {
 	// Get the results from the cursor
 	var results []types.Research
 	if err = cursor.All(context.TODO(), &results); err != nil {
-		panic(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error finding reseaches")
+	}
+	if c.Locals("userRole") != "admin" {
+		fieldsToUpdate := []string{"ModerationStatus", "ReasonOfReject"}
+		utils.UpdateResultsForUserRole(results, fieldsToUpdate)
 	}
 
 	// Marshal the research struct to JSON format
@@ -107,6 +112,12 @@ func GetResearch(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error getting research: " + err.Error())
 	}
 
+	if c.Locals("userRole") != "admin" &&
+		c.Locals("user_id") != result.CreatedBy.Hex() {
+		fieldsToUpdate := []string{"ModerationStatus", "ReasonOfReject"}
+		utils.UpdateResultForUserRole(&result, fieldsToUpdate)
+	}
+
 	// Marshal the research struct to JSON format
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
@@ -139,15 +150,23 @@ func CreateResearch(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
-	slugText := utils.CreateSlug(research.Title)
-	research.Slug = slugText
-
 	// Validate the required fields
 	v := validator.New()
 	err = v.Struct(research)
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Error retrieving created research: " + err.Error())
+		return c.Status(http.StatusBadRequest).SendString("Error retrieving created research: " + err.Error())
 	}
+
+	// update fields
+	userId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+	research.CreatedBy = userId
+	pending := types.Pending
+	research.ModerationStatus = &pending
+	slugText := utils.CreateSlug(research.Title)
+	research.Slug = slugText
 
 	// Insert research document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), research)
@@ -155,15 +174,36 @@ func CreateResearch(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error creating research: " + err.Error())
 	}
 
-	// Get the ID of the inserted research document
-	objId := result.InsertedID.(primitive.ObjectID)
-
 	// Retrieve the updated research from MongoDB
-	filter := bson.M{"_id": objId}
+	filter := bson.M{"_id": result.InsertedID.(primitive.ObjectID)}
 	var createdResearch types.Research
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdResearch)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated research: " + err.Error())
+	}
+
+	// update user
+	usersCollection, _ := db.GetCollection("users")
+	userFilter := bson.M{"_id": userId}
+
+	var user types.User
+	err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	if user.Researches == nil {
+		user.Researches = make(map[primitive.ObjectID]bool)
+	}
+	user.Researches[createdResearch.ID] = true
+
+	update := bson.M{"$set": user}
+	_, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
 	// Set the response headers and write the response body
@@ -191,26 +231,53 @@ func UpdateResearch(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
-	// Parse the request body into a research struct
-	var research types.Research
-	err = c.BodyParser(&research)
+	// Parse the request body into a updateBody struct
+	var updateBody types.Research
+	err = c.BodyParser(&updateBody)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
-	slugText := utils.CreateSlug(research.Title)
-	research.Slug = slugText
-
 	// Validate the required fields
 	v := validator.New()
-	err = v.Struct(research)
+	err = v.Struct(updateBody)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Validation error: " + err.Error())
 	}
 
+	// Find the Research document from MongoDB
+	var result types.Research
+	err = collection.FindOne(context.TODO(), bson.M{"_id": objId}).Decode(&result)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(fiber.StatusNotFound).SendString("Research not found")
+		}
+		return c.Status(fiber.StatusInternalServerError).SendString("Error getting research: " + err.Error())
+	}
+
+	if c.Locals("userRole") != "admin" &&
+		c.Locals("user_id") != result.CreatedBy.Hex() {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
+	if c.Locals("userRole") != "admin" {
+		// owner can't edit the following fields
+		if updateBody.ModerationStatus != nil ||
+			updateBody.ReasonOfReject != nil {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"message": "Permission or ownership error",
+			})
+		}
+	}
+
+	slugText := utils.CreateSlug(updateBody.Title)
+	updateBody.Slug = slugText
+
 	// Update the research document in MongoDB
 	filter := bson.M{"_id": objId}
-	update := bson.M{"$set": research}
+	update := bson.M{"$set": updateBody}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating research: " + err.Error())
@@ -243,16 +310,34 @@ func DeleteResearch(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("researches")
 
 	// Get the research ID from the URL path parameter
-	id := c.Params("id")
-	objId, err := primitive.ObjectIDFromHex(id)
+	researchId := c.Params("id")
+	researchObjId, err := primitive.ObjectIDFromHex(researchId)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
-	filter := bson.D{{Key: "_id", Value: objId}}
+	// Find the research document from MongoDB
+	var research types.Research
+	err = collection.FindOne(context.TODO(), bson.M{"_id": researchObjId}).Decode(&research)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(fiber.StatusNotFound).SendString("Research not found")
+		}
+		return c.Status(fiber.StatusInternalServerError).SendString("Error getting research: " + err.Error())
+	}
+
+	userId := c.Locals("user_id").(string)
+	if c.Locals("userRole") != "admin" &&
+		userId != research.CreatedBy.Hex() {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+
+	researchFilter := bson.D{{Key: "_id", Value: researchObjId}}
 
 	// Delete research document from MongoDB
-	result, err := collection.DeleteOne(context.TODO(), filter)
+	result, err := collection.DeleteOne(context.TODO(), researchFilter)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error deleting research: " + err.Error())
 	}
@@ -260,6 +345,30 @@ func DeleteResearch(c *fiber.Ctx) error {
 	// Check if any documents were deleted
 	if result.DeletedCount == 0 {
 		return c.Status(http.StatusNotFound).SendString("Research not found")
+	}
+
+	// update user
+	usersCollection, _ := db.GetCollection("users")
+	userObjId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+	var user types.User
+	userFilter := bson.M{"_id": userObjId}
+	err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	delete(user.Researches, researchObjId)
+
+	update := bson.M{"$set": user}
+	_, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
 	return c.SendString("Research deleted successfully")
