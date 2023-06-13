@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"henar-backend/db"
+	"henar-backend/notifications"
 	"henar-backend/types"
 	"henar-backend/utils"
 	"net/http"
@@ -512,6 +513,16 @@ func RequestContacts(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
+	// create notification
+	notificationsBody := types.NotificationBody{
+		PersonID:       requesterId,
+		PersonFullName: requester.FirstName + " " + requester.LastName,
+	}
+	err = notifications.CreateNotification(types.ContactsRequested, approverId, notificationsBody)
+	if err != nil {
+		c.Status(http.StatusInternalServerError).SendString("Error creating notification:" + err.Error())
+	}
+
 	// Set the response headers and write the response body
 	return c.SendString(msg)
 }
@@ -557,6 +568,16 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
+	requesterFilter := bson.M{"_id": requesterId}
+	var requester types.User
+	err = collection.FindOne(context.TODO(), requesterFilter).Decode(&requester)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
 	if user.IncomingContactRequests[requesterId] != "" {
 		if user.ConfirmedContactsRequests == nil {
 			user.ConfirmedContactsRequests = make(map[primitive.ObjectID]string)
@@ -571,6 +592,15 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	notificationBody := types.NotificationBody{
+		PersonID:       requesterId,
+		PersonFullName: requester.FirstName + " " + requester.LastName,
+	}
+	err = notifications.CreateNotification(types.ContactsRequestApproved, requesterId, notificationBody)
+	if err != nil {
+		c.Status(http.StatusInternalServerError).SendString("Error creating notification:" + err.Error())
 	}
 
 	return c.SendString("Done")

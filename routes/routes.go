@@ -124,9 +124,9 @@ func Setup(app *fiber.App) {
 	staticGroup := app.Group("/v1/files")
 	staticGroup.Post("/upload", static.UploadFile)
 
-	notificationsGroupSecured := app.Group("/v1/notifications", SessionMiddleware)
+	notificationsGroupSecured := app.Group("/v1/notifications", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
 	notificationsGroupSecured.Get("", notifications.GetNotifications)
-	notificationsGroupSecured.Post("/read", notifications.ReadNotifications)
+	notificationsGroupSecured.Post("", notifications.ReadNotifications)
 
 	app.Listen(":8080")
 }

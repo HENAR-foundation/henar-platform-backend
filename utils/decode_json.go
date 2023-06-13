@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type MalformedRequest struct {
@@ -82,4 +83,18 @@ func DecodeJSONBody(c *fiber.Ctx, dst interface{}) error {
 	}
 
 	return nil
+}
+
+func ConvertStringArrayToObjectIDArray(stringArray []string) ([]primitive.ObjectID, error) {
+	objectIDArray := make([]primitive.ObjectID, len(stringArray))
+
+	for i, str := range stringArray {
+		objectID, err := primitive.ObjectIDFromHex(str)
+		if err != nil {
+			return nil, err
+		}
+		objectIDArray[i] = objectID
+	}
+
+	return objectIDArray, nil
 }
