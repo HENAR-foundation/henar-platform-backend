@@ -74,7 +74,7 @@ type UserBody struct {
 	Job             string                      `json:"job"`
 	Language        string                      `json:"language,omitempty"`
 	Tags            []primitive.ObjectID        `json:"tags"`
-	Notifications   []primitive.ObjectID        `json:"notification,omitempty" bson:"notification,omitempty"`
+	Notifications   []primitive.ObjectID        `json:"notifications,omitempty" bson:"notifications,omitempty"`
 	Events          map[primitive.ObjectID]bool `json:"events" bson:"events"`
 	Researches      map[primitive.ObjectID]bool `json:"researches" bson:"researches"`
 	ContactsRequest `json:"contacts_request" bson:"contacts_request"`
@@ -89,26 +89,48 @@ type User struct {
 	UserBody           `bson:"user_body"`
 }
 
-type NotificationStatus int
+type NotificationStatus string
 
 const (
-	New NotificationStatus = iota
-	Readed
+	New  NotificationStatus = "new"
+	Read NotificationStatus = "read"
 )
 
-type NotificationType int
+type NotificationType string
 
 const (
-	ProjectUpdate NotificationType = iota
-	ContactUpdate
+	ContactsRequested       NotificationType = "contact_requested"
+	ContactsRequestApproved NotificationType = "contact_request_approved"
+	ProjectApproved         NotificationType = "project_approved"
+	ProjetcDeclined         NotificationType = "project_declined"
+	NewComment              NotificationType = "new_comment"
 )
 
+type NotificationAcceptiongRequestBody struct {
+	NotificationsIds []string `json:"notificationsIds"`
+}
+
+type NotificationBody struct {
+	PersonID       primitive.ObjectID `json:"personId" bson:"person_id"`
+	PersonFullName string             `json:"personFullName" bson:"person_full_name"`
+	ProjectID      primitive.ObjectID `json:"projectId" bson:"project_id"`
+	ProjectTitle   string             `json:"projectTitle" bson:"project_title"`
+}
 type Notification struct {
-	id        int64              `json:"id"`
-	CreatedAt string             `json:"created_at"`
+	ID        primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
+	CreatedAt time.Time          `json:"createdAt" bson:"created_at,omitempty"`
 	Status    NotificationStatus `json:"status"`
 	Type      NotificationType   `json:"type"`
-	Message   string             `json:"message"`
+	User      primitive.ObjectID `json:"userId" bson:"user_id"`
+	Body      NotificationBody   `json:"body" bson:"body,omitempty"`
+}
+
+type NotificationResponse struct {
+	ID        primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
+	CreatedAt time.Time          `json:"createdAt" bson:"created_at,omitempty"`
+	Status    NotificationStatus `json:"status"`
+	Type      NotificationType   `json:"type"`
+	Body      NotificationBody   `json:"body" bson:"body,omitempty"`
 }
 
 type Event struct {

@@ -3,6 +3,7 @@ package routes
 import (
 	"henar-backend/events"
 	"henar-backend/locations"
+	"henar-backend/notifications"
 	"henar-backend/projects"
 	"henar-backend/researches"
 	"henar-backend/static"
@@ -122,6 +123,10 @@ func Setup(app *fiber.App) {
 
 	staticGroup := app.Group("/v1/files")
 	staticGroup.Post("/upload", static.UploadFile)
+
+	notificationsGroupSecured := app.Group("/v1/notifications", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
+	notificationsGroupSecured.Get("", notifications.GetNotifications)
+	notificationsGroupSecured.Post("", notifications.ReadNotifications)
 
 	app.Listen(":8080")
 }
