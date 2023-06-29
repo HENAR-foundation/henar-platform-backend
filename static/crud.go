@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
+	"henar-backend/sentry"
 	"net/http"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ import (
 func UploadFile(c *fiber.Ctx) error {
 	file, err := c.FormFile("file")
 	if err != nil {
+		sentry.SentryHandler(err)
 		c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"msg": "error reading file",
 			"err": err,
@@ -34,6 +36,7 @@ func UploadFile(c *fiber.Ctx) error {
 
 	buffer, err := file.Open()
 	if err != nil {
+		sentry.SentryHandler(err)
 		c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"msg": "error reading file",
 			"err": err,
@@ -55,6 +58,7 @@ func UploadFile(c *fiber.Ctx) error {
 	}
 	_, err = s3Client.PutObject(&object)
 	if err != nil {
+		sentry.SentryHandler(err)
 		fmt.Println(err.Error())
 	}
 

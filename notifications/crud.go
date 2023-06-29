@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"henar-backend/db"
+	"henar-backend/sentry"
 	"henar-backend/types"
 	"henar-backend/utils"
 	"net/http"
@@ -29,6 +30,8 @@ func GetNotifications(c *fiber.Ctx) error {
 	var user types.User
 	err := usersCollection.FindOne(context.TODO(), usersFilter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -40,11 +43,14 @@ func GetNotifications(c *fiber.Ctx) error {
 
 	cursor, err := notificationsCollection.Find(context.TODO(), notificationsFilter)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusInternalServerError).SendString("Error finding notifications")
 	}
 
 	var results []types.NotificationResponse
 	if err := cursor.All(context.TODO(), &results); err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error querying database: " + err.Error())
 	}
 	c.Status(http.StatusOK).JSON(results)
@@ -56,11 +62,13 @@ func ReadNotifications(c *fiber.Ctx) error {
 	var body types.NotificationAcceptiongRequestBody
 	err := c.BodyParser(&body)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
 	notificationsIds, err := utils.ConvertStringArrayToObjectIDArray(body.NotificationsIds)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing IDs")
 	}
 
@@ -72,6 +80,7 @@ func ReadNotifications(c *fiber.Ctx) error {
 
 	updatedNotifications, err := collection.UpdateMany(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error updating notifications")
 	}
 

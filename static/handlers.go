@@ -2,6 +2,7 @@ package static
 
 import (
 	"fmt"
+	"henar-backend/sentry"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -21,6 +22,7 @@ func Init() error {
 
 	newSession, err := session.NewSession(s3Config)
 	if err != nil {
+		sentry.SentryHandler(err)
 		fmt.Println(err.Error())
 	}
 	s3Client = s3.New(newSession)

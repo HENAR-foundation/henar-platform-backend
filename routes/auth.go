@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"henar-backend/db"
+	"henar-backend/sentry"
 	"henar-backend/types"
 	"henar-backend/utils"
 	"net/http"
@@ -22,6 +23,7 @@ func SignUp(c *fiber.Ctx) error {
 	var uc types.User
 	err := c.BodyParser(&uc)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 	if uc.Password == nil {
@@ -32,6 +34,7 @@ func SignUp(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(uc)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("error validating user: " + err.Error())
 	}
 
@@ -41,6 +44,7 @@ func SignUp(c *fiber.Ctx) error {
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return fmt.Errorf("Error hashing password: %w", err)
 	}
 	passwordString := string(Password)
@@ -74,12 +78,14 @@ func SignUp(c *fiber.Ctx) error {
 	var existingUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&existingUser)
 	if err == nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Email address already in use")
 	}
 
 	// Insert user document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return fmt.Errorf("Error creating user: ", err)
 	}
 
@@ -91,6 +97,7 @@ func SignUp(c *fiber.Ctx) error {
 	var createdUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdUser)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return fmt.Errorf("Error retrieving created user: ", err)
 	}
 
@@ -105,6 +112,7 @@ func SignIn(c *fiber.Ctx) error {
 
 	err := c.BodyParser(&uc)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "kind an error: " + err.Error(),
 		})
@@ -116,6 +124,7 @@ func SignIn(c *fiber.Ctx) error {
 	err = collection.FindOne(context.TODO(), filter).Decode(&user)
 
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "wrong credentials",
 		})
@@ -124,6 +133,7 @@ func SignIn(c *fiber.Ctx) error {
 	// Comparing the password with the hash
 	err = bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(*uc.Password))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "wrong credentials",
 		})
@@ -155,6 +165,7 @@ func SignIn(c *fiber.Ctx) error {
 func SignOut(c *fiber.Ctx) error {
 	sess, err := store.Get(c)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"message": "logged out (no session)",
 		})
@@ -162,6 +173,7 @@ func SignOut(c *fiber.Ctx) error {
 
 	err = sess.Destroy()
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "kind an error: " + err.Error(),
 		})
@@ -186,6 +198,7 @@ func Check(c *fiber.Ctx) error {
 	var user types.User
 	err := collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -213,6 +226,7 @@ func ForgotPassword(c *fiber.Ctx) error {
 	var requestBody types.ForgotPassword
 	err := c.BodyParser(&requestBody)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -221,6 +235,7 @@ func ForgotPassword(c *fiber.Ctx) error {
 	var user types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.SendString("You will receive a reset email if user with that email exist")
 		}
@@ -236,6 +251,7 @@ func ForgotPassword(c *fiber.Ctx) error {
 	update := bson.M{"$set": user}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -258,6 +274,7 @@ func ResetPassword(c *fiber.Ctx) error {
 	var payload types.ResetPassword
 	err := c.BodyParser(&payload)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -265,6 +282,7 @@ func ResetPassword(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(payload)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("error validating user: " + err.Error())
 	}
 	if *payload.Password != *payload.PasswordConfirm {
@@ -281,6 +299,7 @@ func ResetPassword(c *fiber.Ctx) error {
 	var user types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusBadRequest).SendString("The reset token is invalid or has expired")
 		}
@@ -292,6 +311,7 @@ func ResetPassword(c *fiber.Ctx) error {
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return fmt.Errorf("Error hashing password: %w", err)
 	}
 
@@ -304,6 +324,7 @@ func ResetPassword(c *fiber.Ctx) error {
 	update := bson.M{"$set": user}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
