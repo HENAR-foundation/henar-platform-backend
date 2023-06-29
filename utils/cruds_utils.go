@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"henar-backend/sentry"
 	"henar-backend/types"
 	"reflect"
 	"strconv"
@@ -114,6 +115,7 @@ func GetFilter(c *fiber.Ctx) (bson.M, error) {
 		for _, tagID := range tagIDs {
 			objID, err := primitive.ObjectIDFromHex(tagID)
 			if err != nil {
+				sentry.SentryHandler(err)
 				return nil, fmt.Errorf("invalid tag ID: %s", tagID)
 			}
 			tagObjectIDs = append(tagObjectIDs, objID)
@@ -126,6 +128,7 @@ func GetFilter(c *fiber.Ctx) (bson.M, error) {
 	if location != "" {
 		objID, err := primitive.ObjectIDFromHex(location)
 		if err != nil {
+			sentry.SentryHandler(err)
 			return nil, fmt.Errorf("invalid location ID: %s", location)
 		}
 		filter["location"] = objID
@@ -138,6 +141,7 @@ func GetPaginationOptions(c *fiber.Ctx) (*options.FindOptions, error) {
 	// Extract the limit parameter from the query string
 	limit, err := strconv.Atoi(c.Query("limit"))
 	if err != nil {
+		sentry.SentryHandler(err)
 		// Default to returning all documents if the limit parameter is not present or invalid
 		limit = 0
 	}
@@ -150,6 +154,7 @@ func GetPaginationOptions(c *fiber.Ctx) (*options.FindOptions, error) {
 	// Extract the offset parameter from the query string
 	offset, err := strconv.Atoi(c.Query("offset"))
 	if err != nil {
+		sentry.SentryHandler(err)
 		// Default to zero offset if the offset parameter is not present or invalid
 		offset = 0
 	}

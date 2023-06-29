@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"henar-backend/db"
 	"henar-backend/notifications"
+	"henar-backend/sentry"
 	"henar-backend/types"
 	"henar-backend/utils"
 	"net/http"
@@ -31,6 +32,7 @@ func CreateUser(c *fiber.Ctx) error {
 	var uc types.User
 	err := c.BodyParser(&uc)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -38,6 +40,7 @@ func CreateUser(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(uc)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error validating user: " + err.Error())
 	}
 
@@ -51,6 +54,7 @@ func CreateUser(c *fiber.Ctx) error {
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
 	}
 
@@ -93,6 +97,7 @@ func CreateUser(c *fiber.Ctx) error {
 	// Insert user document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return fmt.Errorf("Error creating user: ", err)
 	}
 
@@ -104,6 +109,7 @@ func CreateUser(c *fiber.Ctx) error {
 	var createdUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdUser)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return fmt.Errorf("Error retrieving created user: ", err)
 	}
 	createdUser.Password = nil
@@ -129,6 +135,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	var updateBody types.User
 	err := c.BodyParser(&updateBody)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -136,6 +143,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(updateBody)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error validating user: " + err.Error())
 	}
 
@@ -145,6 +153,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	// Convert the ID to a MongoDB ObjectID
 	objId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing user ID: " + err.Error())
 	}
 
@@ -154,6 +163,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	var existingUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&existingUser)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -196,6 +206,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	update := bson.M{"$set": updateBody}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -203,6 +214,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	var updatedUser types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedUser)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated user: " + err.Error())
 	}
 
@@ -238,6 +250,7 @@ func GetUser(c *fiber.Ctx) error {
 	var user types.User
 	err := collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -259,6 +272,7 @@ func GetUser(c *fiber.Ctx) error {
 	if userId != nil {
 		userObjId, err = primitive.ObjectIDFromHex(userId.(string))
 		if err != nil {
+			sentry.SentryHandler(err)
 			return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 		}
 	}
@@ -317,11 +331,13 @@ func GetUsers(c *fiber.Ctx) error {
 	// Get the filter and options for the query
 	findOptions, err := utils.GetPaginationOptions(c)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
 	}
 
 	filter, err := utils.GetFilter(c)
 	if err != nil {
+		sentry.SentryHandler(err)
 		errMsg := fmt.Sprintf("Error getting filter: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString(errMsg)
 	}
@@ -340,6 +356,7 @@ func GetUsers(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("users")
 	cur, err := collection.Find(context.TODO(), filter)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving users: " + err.Error())
 	}
 	defer cur.Close(context.Background())
@@ -350,6 +367,7 @@ func GetUsers(c *fiber.Ctx) error {
 		var user types.User
 		err := cur.Decode(&user)
 		if err != nil {
+			sentry.SentryHandler(err)
 			return c.Status(http.StatusInternalServerError).SendString("Error decoding user: " + err.Error())
 		}
 		user.Password = nil
@@ -388,6 +406,7 @@ func DeleteUser(c *fiber.Ctx) error {
 	// Convert the ID to a MongoDB ObjectID
 	objId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing user ID: " + err.Error())
 	}
 
@@ -396,6 +415,7 @@ func DeleteUser(c *fiber.Ctx) error {
 	filter := bson.M{"_id": objId}
 	result, err := collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error deleting user: " + err.Error())
 	}
 
@@ -425,6 +445,7 @@ func RequestContacts(c *fiber.Ctx) error {
 	var rm types.RequestMessage
 	err := c.BodyParser(&rm)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -432,22 +453,26 @@ func RequestContacts(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(rm)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error validating user: " + err.Error())
 	}
 
 	collection, err := db.GetCollection("users")
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
 
 	// Get the project ID from the URL path parameter
 	approverId, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
 
 	requesterId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -456,6 +481,7 @@ func RequestContacts(c *fiber.Ctx) error {
 	var requester types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&requester)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -467,6 +493,7 @@ func RequestContacts(c *fiber.Ctx) error {
 	var approver types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&approver)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -496,6 +523,7 @@ func RequestContacts(c *fiber.Ctx) error {
 	update := bson.M{"$set": approver}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -504,6 +532,7 @@ func RequestContacts(c *fiber.Ctx) error {
 	update = bson.M{"$set": requester}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -514,6 +543,7 @@ func RequestContacts(c *fiber.Ctx) error {
 	}
 	err = notifications.CreateNotification(types.ContactsRequested, approverId, notificationsBody)
 	if err != nil {
+		sentry.SentryHandler(err)
 		c.Status(http.StatusInternalServerError).SendString("Error creating notification:" + err.Error())
 	}
 
@@ -537,17 +567,20 @@ func RequestContacts(c *fiber.Ctx) error {
 func ApproveContactsRequest(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("users")
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
 
 	// Get the project ID from the URL path parameter
 	requesterId, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
 
 	approverId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -556,6 +589,7 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 	var user types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -566,6 +600,7 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 	var requester types.User
 	err = collection.FindOne(context.TODO(), requesterFilter).Decode(&requester)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -585,6 +620,7 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 	update := bson.M{"$set": user}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -594,6 +630,7 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 	}
 	err = notifications.CreateNotification(types.ContactsRequestApproved, requesterId, notificationBody)
 	if err != nil {
+		sentry.SentryHandler(err)
 		c.Status(http.StatusInternalServerError).SendString("Error creating notification:" + err.Error())
 	}
 
@@ -616,17 +653,20 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 func RejectContactsRequest(c *fiber.Ctx) error {
 	collection, err := db.GetCollection("users")
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
 
 	// Get the project ID from the URL path parameter
 	requesterId, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
 
 	userId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -635,6 +675,7 @@ func RejectContactsRequest(c *fiber.Ctx) error {
 	var user types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -655,6 +696,7 @@ func RejectContactsRequest(c *fiber.Ctx) error {
 	update := bson.M{"$set": user}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -676,22 +718,26 @@ func RejectContactsRequest(c *fiber.Ctx) error {
 func ApproveProjectRequest(c *fiber.Ctx) error {
 	userCollection, err := db.GetCollection("users")
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
 
 	projectCollection, err := db.GetCollection("projects")
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
 
 	requesterId := c.Params("id")
 	requesterObjId, err := primitive.ObjectIDFromHex(requesterId)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
 
 	approverId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -700,6 +746,7 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	var user types.User
 	err = userCollection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -712,6 +759,7 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	var project types.Project
 	err = projectCollection.FindOne(context.TODO(), filter).Decode(&project)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
 	}
 
@@ -738,6 +786,7 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	projectUpdate := bson.M{"$set": project}
 	_, err = projectCollection.UpdateOne(context.TODO(), projectFilter, projectUpdate)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -746,6 +795,7 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	update := bson.M{"$set": user}
 	_, err = userCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -767,21 +817,25 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 func RejectProjectRequest(c *fiber.Ctx) error {
 	userCollection, err := db.GetCollection("users")
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
 	projectCollection, err := db.GetCollection("projects")
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
 	}
 
 	// Get the project ID from the URL path parameter
 	requesterId, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
 	}
 
 	userId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -790,6 +844,7 @@ func RejectProjectRequest(c *fiber.Ctx) error {
 	var user types.User
 	err = userCollection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -802,6 +857,7 @@ func RejectProjectRequest(c *fiber.Ctx) error {
 	var project types.Project
 	err = projectCollection.FindOne(context.TODO(), filter).Decode(&project)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
 	}
 
@@ -829,6 +885,7 @@ func RejectProjectRequest(c *fiber.Ctx) error {
 	projectUpdate := bson.M{"$set": project}
 	_, err = projectCollection.UpdateOne(context.TODO(), projectFilter, projectUpdate)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -837,6 +894,7 @@ func RejectProjectRequest(c *fiber.Ctx) error {
 	update := bson.M{"$set": user}
 	_, err = userCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -861,6 +919,7 @@ func UpdatePassword(c *fiber.Ctx) error {
 	var requestBody types.PasswordUpdate
 	err := c.BodyParser(&requestBody)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -868,12 +927,14 @@ func UpdatePassword(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(requestBody)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("error validating user: " + err.Error())
 	}
 
 	userId := c.Locals("user_id").(string)
 	objId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing user ID: " + err.Error())
 	}
 
@@ -883,6 +944,7 @@ func UpdatePassword(c *fiber.Ctx) error {
 	var user types.User
 	err = collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -900,6 +962,7 @@ func UpdatePassword(c *fiber.Ctx) error {
 		[]byte(*user.Password),
 		[]byte(*requestBody.Password))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "wrong credentials",
 		})
@@ -907,6 +970,7 @@ func UpdatePassword(c *fiber.Ctx) error {
 
 	Password, err := bcrypt.GenerateFromPassword([]byte(*requestBody.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
 	}
 	passwordString := string(Password)
@@ -916,6 +980,7 @@ func UpdatePassword(c *fiber.Ctx) error {
 	update := bson.M{"$set": user}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 

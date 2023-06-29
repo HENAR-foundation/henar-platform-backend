@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"henar-backend/db"
+	"henar-backend/sentry"
 	"henar-backend/types"
 	"henar-backend/utils"
 	"net/http"
@@ -34,24 +35,28 @@ func GetLocations(c *fiber.Ctx) error {
 	// Get the pagination options for the query
 	findOptions, err := utils.GetPaginationOptions(c)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
 	}
 
 	// Query the database and get the cursor
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error finding locations")
 	}
 
 	// Get the results from the cursor
 	var results []types.Location
 	if err = cursor.All(context.TODO(), &results); err != nil {
+		sentry.SentryHandler(err)
 		panic(err)
 	}
 
 	// Marshal the research struct to JSON format
 	jsonBytes, err := json.Marshal(results)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
@@ -79,6 +84,7 @@ func GetLocation(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -92,6 +98,7 @@ func GetLocation(c *fiber.Ctx) error {
 		filter,
 	).Decode(&result)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).SendString("Location not found")
 		}
@@ -101,6 +108,7 @@ func GetLocation(c *fiber.Ctx) error {
 	// Marshal the research struct to JSON format
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
@@ -127,6 +135,7 @@ func CreateLocation(c *fiber.Ctx) error {
 	var research types.Location
 	err := c.BodyParser(&research)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -134,12 +143,14 @@ func CreateLocation(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(research)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error retrieving created research: " + err.Error())
 	}
 
 	// Insert research document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), research)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error creating research: " + err.Error())
 	}
 
@@ -151,6 +162,7 @@ func CreateLocation(c *fiber.Ctx) error {
 	var createdLocation types.Location
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdLocation)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated research: " + err.Error())
 	}
 
@@ -182,6 +194,7 @@ func UpdateLocation(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -189,6 +202,7 @@ func UpdateLocation(c *fiber.Ctx) error {
 	var research types.Location
 	err = c.BodyParser(&research)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -196,6 +210,7 @@ func UpdateLocation(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(research)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Validation error: " + err.Error())
 	}
 
@@ -204,6 +219,7 @@ func UpdateLocation(c *fiber.Ctx) error {
 	update := bson.M{"$set": research}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating research: " + err.Error())
 	}
 
@@ -212,6 +228,7 @@ func UpdateLocation(c *fiber.Ctx) error {
 	var updatedLocation types.Location
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedLocation)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated research: " + err.Error())
 	}
 
@@ -243,6 +260,7 @@ func DeleteLocation(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -251,6 +269,7 @@ func DeleteLocation(c *fiber.Ctx) error {
 	// Delete research document from MongoDB
 	result, err := collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error deleting research: " + err.Error())
 	}
 
@@ -279,6 +298,7 @@ func GetLocationSuggestions(c *fiber.Ctx) error {
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return fmt.Errorf("failed to create HTTP request: %v", err)
 	}
 
@@ -300,6 +320,7 @@ func GetLocationSuggestions(c *fiber.Ctx) error {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
