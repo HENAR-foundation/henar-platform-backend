@@ -200,7 +200,9 @@ func CreateProject(c *fiber.Ctx) error {
 	project.ModerationStatus = &pending
 
 	slugText := utils.CreateSlug(project.Title)
+	views := int64(0)
 	project.Slug = &slugText
+	project.Views = &views
 	project.Applicants = make(map[primitive.ObjectID]bool)
 	project.SuccessfulApplicants = make(map[primitive.ObjectID]bool)
 
