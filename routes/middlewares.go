@@ -1,12 +1,15 @@
 package routes
 
 import (
+	"henar-backend/sentry"
+
 	"github.com/gofiber/fiber/v2"
 )
 
 func SessionMiddleware(c *fiber.Ctx) error {
 	sess, err := store.Get(c)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "not authorized (no session)",
 		})
@@ -24,6 +27,7 @@ func SessionMiddleware(c *fiber.Ctx) error {
 func AdminMiddleware(c *fiber.Ctx) error {
 	sess, err := store.Get(c)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "not authorized",
 		})
@@ -39,6 +43,7 @@ func AdminMiddleware(c *fiber.Ctx) error {
 func AuthorMiddleware(c *fiber.Ctx) error {
 	sess, err := store.Get(c)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "not authorized",
 		})

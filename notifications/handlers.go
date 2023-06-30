@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"henar-backend/db"
+	"henar-backend/sentry"
 	"henar-backend/types"
 	"time"
 
@@ -24,6 +25,8 @@ func CreateNotification(notificationType types.NotificationType, userId primitiv
 		Body:      body,
 	})
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return errors.New("failed to create notification")
 	}
 
@@ -36,6 +39,8 @@ func CreateNotification(notificationType types.NotificationType, userId primitiv
 	var user types.User
 	err = usersCollection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return errors.New("failed to find user")
 	}
 
@@ -43,6 +48,8 @@ func CreateNotification(notificationType types.NotificationType, userId primitiv
 	update := bson.M{"$set": user}
 	_, err = usersCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return errors.New("failed to update user")
 	}
 

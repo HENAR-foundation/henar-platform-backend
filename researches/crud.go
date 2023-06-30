@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"henar-backend/db"
+	"henar-backend/sentry"
 	"henar-backend/types"
 	"henar-backend/utils"
 	"net/http"
@@ -37,11 +38,15 @@ func GetResearches(c *fiber.Ctx) error {
 	// Get the filter and options for the query
 	findOptions, err := utils.GetPaginationOptions(c)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
 	}
 
 	filter, err := utils.GetFilter(c)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		errMsg := fmt.Sprintf("Error getting projects filter: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString(errMsg)
 	}
@@ -55,12 +60,16 @@ func GetResearches(c *fiber.Ctx) error {
 	// Query the database and get the cursor
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(fiber.StatusInternalServerError).SendString("Error finding researches")
 	}
 
 	// Get the results from the cursor
 	var results []types.Research
 	if err = cursor.All(context.TODO(), &results); err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusInternalServerError).SendString("Error finding reseaches")
 	}
 	if c.Locals("userRole") != "admin" {
@@ -71,6 +80,8 @@ func GetResearches(c *fiber.Ctx) error {
 	// Marshal the research struct to JSON format
 	jsonBytes, err := json.Marshal(results)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
@@ -106,6 +117,8 @@ func GetResearch(c *fiber.Ctx) error {
 		filter,
 	).Decode(&result)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).SendString("Research not found")
 		}
@@ -121,6 +134,8 @@ func GetResearch(c *fiber.Ctx) error {
 	// Marshal the research struct to JSON format
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
@@ -147,6 +162,8 @@ func CreateResearch(c *fiber.Ctx) error {
 	var research types.Research
 	err := c.BodyParser(&research)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -154,12 +171,16 @@ func CreateResearch(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(research)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusBadRequest).SendString("Error retrieving created research: " + err.Error())
 	}
 
 	// update fields
 	userId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 	research.CreatedBy = userId
@@ -171,6 +192,8 @@ func CreateResearch(c *fiber.Ctx) error {
 	// Insert research document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), research)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusInternalServerError).SendString("Error creating research: " + err.Error())
 	}
 
@@ -179,6 +202,8 @@ func CreateResearch(c *fiber.Ctx) error {
 	var createdResearch types.Research
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdResearch)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated research: " + err.Error())
 	}
 
@@ -189,6 +214,8 @@ func CreateResearch(c *fiber.Ctx) error {
 	var user types.User
 	err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -203,6 +230,8 @@ func CreateResearch(c *fiber.Ctx) error {
 	update := bson.M{"$set": user}
 	_, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -228,6 +257,8 @@ func UpdateResearch(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -235,6 +266,8 @@ func UpdateResearch(c *fiber.Ctx) error {
 	var updateBody types.Research
 	err = c.BodyParser(&updateBody)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -242,6 +275,8 @@ func UpdateResearch(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(updateBody)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusBadRequest).SendString("Validation error: " + err.Error())
 	}
 
@@ -249,6 +284,8 @@ func UpdateResearch(c *fiber.Ctx) error {
 	var result types.Research
 	err = collection.FindOne(context.TODO(), bson.M{"_id": objId}).Decode(&result)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).SendString("Research not found")
 		}
@@ -280,6 +317,8 @@ func UpdateResearch(c *fiber.Ctx) error {
 	update := bson.M{"$set": updateBody}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusInternalServerError).SendString("Error updating research: " + err.Error())
 	}
 
@@ -288,6 +327,8 @@ func UpdateResearch(c *fiber.Ctx) error {
 	var updatedResearch types.Research
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedResearch)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated research: " + err.Error())
 	}
 
@@ -313,6 +354,8 @@ func DeleteResearch(c *fiber.Ctx) error {
 	researchId := c.Params("id")
 	researchObjId, err := primitive.ObjectIDFromHex(researchId)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -320,6 +363,8 @@ func DeleteResearch(c *fiber.Ctx) error {
 	var research types.Research
 	err = collection.FindOne(context.TODO(), bson.M{"_id": researchObjId}).Decode(&research)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).SendString("Research not found")
 		}
@@ -339,6 +384,8 @@ func DeleteResearch(c *fiber.Ctx) error {
 	// Delete research document from MongoDB
 	result, err := collection.DeleteOne(context.TODO(), researchFilter)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusInternalServerError).SendString("Error deleting research: " + err.Error())
 	}
 
@@ -351,12 +398,16 @@ func DeleteResearch(c *fiber.Ctx) error {
 	usersCollection, _ := db.GetCollection("users")
 	userObjId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 	var user types.User
 	userFilter := bson.M{"_id": userObjId}
 	err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -368,6 +419,8 @@ func DeleteResearch(c *fiber.Ctx) error {
 	update := bson.M{"$set": user}
 	_, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
+
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 

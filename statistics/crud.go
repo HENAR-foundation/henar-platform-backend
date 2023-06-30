@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"henar-backend/db"
+	"henar-backend/sentry"
 	"henar-backend/types"
 	"henar-backend/utils"
 	"net/http"
@@ -33,24 +34,28 @@ func GetStatistics(c *fiber.Ctx) error {
 	// Get the pagination options for the query
 	findOptions, err := utils.GetPaginationOptions(c)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
 	}
 
 	// Query the database and get the cursor
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error finding statistics")
 	}
 
 	// Get the results from the cursor
 	var results []types.Statistic
 	if err = cursor.All(context.TODO(), &results); err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error finding statistics")
 	}
 
 	// Marshal the statistic struct to JSON format
 	jsonBytes, err := json.Marshal(results)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
@@ -78,6 +83,7 @@ func GetStatistic(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -91,6 +97,7 @@ func GetStatistic(c *fiber.Ctx) error {
 		filter,
 	).Decode(&result)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).SendString("Statistic not found")
 		}
@@ -100,6 +107,7 @@ func GetStatistic(c *fiber.Ctx) error {
 	// Marshal the statistic struct to JSON format
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
@@ -132,6 +140,7 @@ func CreateStatistic(c *fiber.Ctx) error {
 	var statistic types.Statistic
 	err := c.BodyParser(&statistic)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -139,12 +148,14 @@ func CreateStatistic(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(statistic)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error retrieving created statistic: " + err.Error())
 	}
 
 	// Insert statistic document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), statistic)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error creating statistic: " + err.Error())
 	}
 
@@ -156,6 +167,7 @@ func CreateStatistic(c *fiber.Ctx) error {
 	var createdStatistic types.Statistic
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdStatistic)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated statistic: " + err.Error())
 	}
 
@@ -187,6 +199,7 @@ func UpdateStatistic(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -194,6 +207,7 @@ func UpdateStatistic(c *fiber.Ctx) error {
 	var statistic types.Statistic
 	err = c.BodyParser(&statistic)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -201,6 +215,7 @@ func UpdateStatistic(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(statistic)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Validation error: " + err.Error())
 	}
 
@@ -209,6 +224,7 @@ func UpdateStatistic(c *fiber.Ctx) error {
 	update := bson.M{"$set": statistic}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating statistic: " + err.Error())
 	}
 
@@ -217,6 +233,7 @@ func UpdateStatistic(c *fiber.Ctx) error {
 	var updatedStatistic types.Statistic
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedStatistic)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated statistic: " + err.Error())
 	}
 
@@ -248,6 +265,7 @@ func DeleteStatistic(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -256,6 +274,7 @@ func DeleteStatistic(c *fiber.Ctx) error {
 	// Delete statistic document from MongoDB
 	result, err := collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error deleting statistic: " + err.Error())
 	}
 

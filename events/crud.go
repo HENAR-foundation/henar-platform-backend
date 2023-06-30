@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"henar-backend/db"
+	"henar-backend/sentry"
 	"henar-backend/types"
 	"henar-backend/utils"
 	"net/http"
@@ -37,11 +38,13 @@ func GetEvents(c *fiber.Ctx) error {
 	// Get the filter and options for the query
 	findOptions, err := utils.GetPaginationOptions(c)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
 	}
 
 	filter, err := utils.GetFilter(c)
 	if err != nil {
+		sentry.SentryHandler(err)
 		errMsg := fmt.Sprintf("Error getting filter: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString(errMsg)
 	}
@@ -54,12 +57,14 @@ func GetEvents(c *fiber.Ctx) error {
 	// Query the database and get the cursor
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error finding events")
 	}
 
 	// Get the results from the cursor
 	var results []types.Event
 	if err = cursor.All(context.TODO(), &results); err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error finding projects")
 	}
 
@@ -71,6 +76,7 @@ func GetEvents(c *fiber.Ctx) error {
 	// Marshal the event struct to JSON format
 	jsonBytes, err := json.Marshal(results)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
@@ -103,6 +109,7 @@ func GetEvent(c *fiber.Ctx) error {
 	// Find the event by slug
 	err := collection.FindOne(context.TODO(), filter).Decode(&result)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).SendString("Event not found")
 		}
@@ -118,6 +125,7 @@ func GetEvent(c *fiber.Ctx) error {
 	// Marshal the event struct to JSON format
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
@@ -144,6 +152,7 @@ func CreateEvent(c *fiber.Ctx) error {
 	var event types.Event
 	err := c.BodyParser(&event)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -151,6 +160,7 @@ func CreateEvent(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(event)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error retrieving created event: " + err.Error())
 	}
 
@@ -162,6 +172,7 @@ func CreateEvent(c *fiber.Ctx) error {
 	// userId := c.Locals("user_id").(string)
 	userObjId, err := primitive.ObjectIDFromHex(c.Locals("user_id").(string))
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -174,6 +185,7 @@ func CreateEvent(c *fiber.Ctx) error {
 	// Insert event document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), event)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error creating event: " + err.Error())
 	}
 
@@ -182,6 +194,7 @@ func CreateEvent(c *fiber.Ctx) error {
 	var createdEvent types.Event
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdEvent)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated event: " + err.Error())
 	}
 
@@ -192,6 +205,7 @@ func CreateEvent(c *fiber.Ctx) error {
 	var user types.User
 	err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -207,6 +221,7 @@ func CreateEvent(c *fiber.Ctx) error {
 	update := bson.M{"$set": user}
 	_, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 
@@ -232,6 +247,7 @@ func UpdateEvent(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -239,6 +255,7 @@ func UpdateEvent(c *fiber.Ctx) error {
 	var updateBody types.Event
 	err = c.BodyParser(&updateBody)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -246,6 +263,7 @@ func UpdateEvent(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(updateBody)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Validation error: " + err.Error())
 	}
 
@@ -253,6 +271,7 @@ func UpdateEvent(c *fiber.Ctx) error {
 	var result types.Event
 	err = collection.FindOne(context.TODO(), bson.M{"_id": objId}).Decode(&result)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).SendString("Event not found")
 		}
@@ -284,6 +303,7 @@ func UpdateEvent(c *fiber.Ctx) error {
 	update := bson.M{"$set": updateBody}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating event: " + err.Error())
 	}
 
@@ -292,6 +312,7 @@ func UpdateEvent(c *fiber.Ctx) error {
 	var updatedEvent types.Event
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedEvent)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated event: " + err.Error())
 	}
 
@@ -317,6 +338,7 @@ func DeleteEvent(c *fiber.Ctx) error {
 	id := c.Params("id")
 	eventObjId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -324,6 +346,7 @@ func DeleteEvent(c *fiber.Ctx) error {
 	var event types.Event
 	err = collection.FindOne(context.TODO(), bson.M{"_id": eventObjId}).Decode(&event)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).SendString("Event not found")
 		}
@@ -344,6 +367,7 @@ func DeleteEvent(c *fiber.Ctx) error {
 	// Delete event document from MongoDB
 	result, err := collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error deleting event: " + err.Error())
 	}
 
@@ -356,12 +380,14 @@ func DeleteEvent(c *fiber.Ctx) error {
 	usersCollection, _ := db.GetCollection("users")
 	userObjId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 	var user types.User
 	userFilter := bson.M{"_id": userObjId}
 	err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(http.StatusNotFound).SendString("User not found")
 		}
@@ -373,6 +399,7 @@ func DeleteEvent(c *fiber.Ctx) error {
 	update := bson.M{"$set": user}
 	_, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
 	}
 

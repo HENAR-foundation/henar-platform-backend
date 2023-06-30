@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"henar-backend/db"
+	"henar-backend/sentry"
 	"henar-backend/types"
 	"henar-backend/utils"
 	"net/http"
@@ -33,24 +34,28 @@ func GetTags(c *fiber.Ctx) error {
 	// Get the pagination options for the query
 	findOptions, err := utils.GetPaginationOptions(c)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
 	}
 
 	// Query the database and get the cursor
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error finding tags")
 	}
 
 	// Get the results from the cursor
 	var results []types.Tag
 	if err = cursor.All(context.TODO(), &results); err != nil {
+		sentry.SentryHandler(err)
 		panic(err)
 	}
 
 	// Marshal the tag struct to JSON format
 	jsonBytes, err := json.Marshal(results)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
@@ -78,6 +83,7 @@ func GetTag(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -91,6 +97,7 @@ func GetTag(c *fiber.Ctx) error {
 		filter,
 	).Decode(&result)
 	if err != nil {
+		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).SendString("Tag not found")
 		}
@@ -100,6 +107,7 @@ func GetTag(c *fiber.Ctx) error {
 	// Marshal the tag struct to JSON format
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
 	}
 
@@ -132,6 +140,7 @@ func CreateTag(c *fiber.Ctx) error {
 	var tag types.Tag
 	err := c.BodyParser(&tag)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing request body: " + err.Error()})
 	}
 
@@ -139,12 +148,14 @@ func CreateTag(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(tag)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Error retrieving created tag: " + err.Error()})
 	}
 
 	// Insert tag document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), tag)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating tag: " + err.Error()})
 	}
 
@@ -156,12 +167,14 @@ func CreateTag(c *fiber.Ctx) error {
 	var createdTag types.Tag
 	err = collection.FindOne(context.TODO(), filter).Decode(&createdTag)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Error retrieving updated tag: " + err.Error()})
 	}
 
 	// Marshal the tag struct to JSON format
 	jsonBytes, err := json.Marshal(createdTag)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": "Error encoding JSON: " + err.Error()})
 	}
 
@@ -193,6 +206,7 @@ func UpdateTag(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -200,6 +214,7 @@ func UpdateTag(c *fiber.Ctx) error {
 	var tag types.Tag
 	err = c.BodyParser(&tag)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
@@ -207,6 +222,7 @@ func UpdateTag(c *fiber.Ctx) error {
 	v := validator.New()
 	err = v.Struct(tag)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Validation error: " + err.Error())
 	}
 
@@ -215,6 +231,7 @@ func UpdateTag(c *fiber.Ctx) error {
 	update := bson.M{"$set": tag}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating tag: " + err.Error())
 	}
 
@@ -223,12 +240,14 @@ func UpdateTag(c *fiber.Ctx) error {
 	var updatedTag types.Tag
 	err = collection.FindOne(context.TODO(), filter).Decode(&updatedTag)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated tag: " + err.Error())
 	}
 
 	// Marshal the updated tag struct to JSON format
 	jsonBytes, err := json.Marshal(updatedTag)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error creating response: " + err.Error())
 	}
 
@@ -258,6 +277,7 @@ func DeleteTag(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
 
@@ -266,6 +286,7 @@ func DeleteTag(c *fiber.Ctx) error {
 	// Delete tag document from MongoDB
 	result, err := collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
+		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error deleting tag: " + err.Error())
 	}
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"henar-backend/sentry"
 	"io"
 	"net/http"
 	"strings"
@@ -33,6 +34,7 @@ func DecodeJSONBody(c *fiber.Ctx, dst interface{}) error {
 
 	err := dec.Decode(&dst)
 	if err != nil {
+		sentry.SentryHandler(err)
 		var syntaxError *json.SyntaxError
 		var unmarshalTypeError *json.UnmarshalTypeError
 
@@ -78,6 +80,7 @@ func DecodeJSONBody(c *fiber.Ctx, dst interface{}) error {
 
 	err = dec.Decode(&struct{}{})
 	if err != io.EOF {
+		sentry.SentryHandler(err)
 		msg := "Request body must only contain a single JSON object"
 		return &MalformedRequest{Status: http.StatusBadRequest, Msg: msg}
 	}
@@ -91,6 +94,7 @@ func ConvertStringArrayToObjectIDArray(stringArray []string) ([]primitive.Object
 	for i, str := range stringArray {
 		objectID, err := primitive.ObjectIDFromHex(str)
 		if err != nil {
+			sentry.SentryHandler(err)
 			return nil, err
 		}
 		objectIDArray[i] = objectID
