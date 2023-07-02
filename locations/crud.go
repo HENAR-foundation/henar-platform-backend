@@ -1,6 +1,7 @@
 package locations
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -296,22 +297,31 @@ func GetLocationSuggestions(c *fiber.Ctx) error {
 	url := "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
 	apiKey := "5a688e4bfd915586e67c7c0f42fcc08cda0d081b"
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		sentry.SentryHandler(err)
-		return fmt.Errorf("failed to create HTTP request: %v", err)
-	}
-
+	query := c.Query("q")
 	language := c.Query("language")
 	if language == "" {
 		language = "en" // default language is English
 	}
 
-	// Set the query parameters
-	q := req.URL.Query()
-	q.Add("query", c.Query("q"))
-	q.Add("language", language)
-	req.URL.RawQuery = q.Encode()
+	// Create the request body
+	reqBody := map[string]interface{}{
+		"query":     query,
+		"locations": []map[string]string{{"country": "*"}},
+		"language":  language, // Add the language to the request body
+	}
+
+	// Convert the request body to JSON
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return fmt.Errorf("failed to marshal request body: %v", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		sentry.SentryHandler(err)
+		return fmt.Errorf("failed to create HTTP request: %v", err)
+	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
