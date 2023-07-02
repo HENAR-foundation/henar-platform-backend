@@ -600,7 +600,7 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
-	// get requster
+	// get requester
 	requesterFilter := bson.M{"_id": requesterId}
 	var requester types.User
 	err = collection.FindOne(context.TODO(), requesterFilter).Decode(&requester)
@@ -778,6 +778,19 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
+	fmt.Println("requesterId", requesterId)
+	// get requester
+	requesterFilter := bson.M{"_id": requesterObjId}
+	var requester types.User
+	err = userCollection.FindOne(context.TODO(), requesterFilter).Decode(&requester)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
 	// get project
 	projectId := user.ProjectsApplications[requesterObjId]
 	filter = bson.M{"_id": projectId}
@@ -789,7 +802,7 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	}
 
 	// TODO: when I cant find requester: Error retrieving updated project: mongo: no documents in result
-	// TODO: validation of unexisted requster
+	// TODO: validation of unexisted requester
 	// if user.ProjectsApplications[requesterObjId] {
 
 	// }
@@ -801,10 +814,21 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	}
 	user.ConfirmedApplications[requesterObjId] = projectId
 	delete(project.Applicants, requesterObjId)
+
 	if project.SuccessfulApplicants == nil {
 		project.SuccessfulApplicants = make(map[primitive.ObjectID]bool)
 	}
 	project.SuccessfulApplicants[requesterObjId] = true
+
+	// update requester fields
+	if requester.ApprovedContacts == nil {
+		requester.ApprovedContacts = make(map[primitive.ObjectID]string)
+	}
+	requester.ApprovedContacts[approverId] = projectId.Hex()
+	// TODO: extend project structure
+	// outgoing applications
+	// approved applications
+	// like a contacts requests
 
 	// update project
 	projectFilter := bson.M{"_id": projectId}
@@ -818,6 +842,17 @@ func ApproveProjectRequest(c *fiber.Ctx) error {
 	// update approver
 	filter = bson.M{"_id": approverId}
 	update := bson.M{"$set": user}
+	_, err = userCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	// todo outgoing project request list
+
+	// update requester
+	filter = bson.M{"_id": requesterObjId}
+	update = bson.M{"$set": requester}
 	_, err = userCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		sentry.SentryHandler(err)
