@@ -72,6 +72,7 @@ func CreateUser(c *fiber.Ctx) error {
 				OutgoingContactRequests:   make(map[primitive.ObjectID]string),
 				ConfirmedContactsRequests: make(map[primitive.ObjectID]string),
 				BlockedUsers:              make(map[primitive.ObjectID]string),
+				ApprovedContacts:          make(map[primitive.ObjectID]string),
 			},
 			UserProjects: types.UserProjects{
 				// TODO: delete this
@@ -512,6 +513,9 @@ func RequestContacts(c *fiber.Ctx) error {
 		if requester.OutgoingContactRequests == nil {
 			requester.OutgoingContactRequests = make(map[primitive.ObjectID]string)
 		}
+		if requester.OutgoingContactRequests == nil {
+			requester.OutgoingContactRequests = make(map[primitive.ObjectID]string)
+		}
 
 		approver.IncomingContactRequests[requesterId] = rm.Message
 		requester.OutgoingContactRequests[approverId] = rm.Message
@@ -586,8 +590,8 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 
 	// get approver
 	filter := bson.M{"_id": approverId}
-	var user types.User
-	err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	var approver types.User
+	err = collection.FindOne(context.TODO(), filter).Decode(&approver)
 	if err != nil {
 		sentry.SentryHandler(err)
 		if err == mongo.ErrNoDocuments {
@@ -596,6 +600,7 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
+	// get requster
 	requesterFilter := bson.M{"_id": requesterId}
 	var requester types.User
 	err = collection.FindOne(context.TODO(), requesterFilter).Decode(&requester)
@@ -607,17 +612,37 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
-	if user.IncomingContactRequests[requesterId] != "" {
-		if user.ConfirmedContactsRequests == nil {
-			user.ConfirmedContactsRequests = make(map[primitive.ObjectID]string)
+	// update approver fields
+	if approver.IncomingContactRequests[requesterId] != "" {
+		if approver.ConfirmedContactsRequests == nil {
+			approver.ConfirmedContactsRequests = make(map[primitive.ObjectID]string)
 		}
-		user.ConfirmedContactsRequests[requesterId] = user.IncomingContactRequests[requesterId]
-		delete(user.IncomingContactRequests, requesterId)
+		approver.ConfirmedContactsRequests[requesterId] = approver.IncomingContactRequests[requesterId]
+		delete(approver.IncomingContactRequests, requesterId)
+	}
+
+	// update requester fields
+	if requester.OutgoingContactRequests[approverId] != "" {
+		if requester.ApprovedContacts == nil {
+			requester.ApprovedContacts = make(map[primitive.ObjectID]string)
+		}
+		requester.ApprovedContacts[approverId] = requester.OutgoingContactRequests[approverId]
+		delete(requester.OutgoingContactRequests, approverId)
+		// TODO: what if approver block user?
 	}
 
 	// update approver
 	filter = bson.M{"_id": approverId}
-	update := bson.M{"$set": user}
+	update := bson.M{"$set": approver}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	// update requester
+	filter = bson.M{"_id": requesterId}
+	update = bson.M{"$set": requester}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		sentry.SentryHandler(err)
