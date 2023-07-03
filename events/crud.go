@@ -177,8 +177,6 @@ func CreateEvent(c *fiber.Ctx) error {
 	}
 
 	event.CreatedBy = userObjId
-	pending := types.Pending
-	event.ModerationStatus = &pending
 	slugText := utils.CreateSlug(event.Title)
 	event.Slug = slugText
 
@@ -285,15 +283,15 @@ func UpdateEvent(c *fiber.Ctx) error {
 		})
 	}
 
-	if c.Locals("userRole") != "admin" {
-		// owner can't edit the following fields
-		if updateBody.ModerationStatus != nil ||
-			updateBody.ReasonOfReject != nil {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"message": "Permission or ownership error",
-			})
-		}
-	}
+	// if c.Locals("userRole") != "admin" {
+	// 	// owner can't edit the following fields
+	// 	if updateBody.ModerationStatus != nil ||
+	// 		updateBody.ReasonOfReject != nil {
+	// 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+	// 			"message": "Permission or ownership error",
+	// 		})
+	// 	}
+	// }
 
 	slugText := utils.CreateSlug(updateBody.Title)
 	updateBody.Slug = slugText

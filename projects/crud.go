@@ -160,6 +160,64 @@ func GetProjects(c *fiber.Ctx) error {
 	return nil
 }
 
+func GetSelfProjects(c *fiber.Ctx) error {
+	collection, _ := db.GetCollection("projects")
+
+	userId := c.Locals("user_id")
+
+	if userId == nil {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"message": "not authorized",
+		})
+	}
+	objId, _ := primitive.ObjectIDFromHex(userId.(string))
+
+	// Get the filter and options for the query
+	findOptions, err := utils.GetPaginationOptions(c)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
+	}
+
+	filter := bson.M{"created_by": objId}
+
+	sort := utils.GetSort(c)
+	if len(sort) != 0 {
+		findOptions.SetSort(sort)
+	}
+
+	// Query the database and get the cursor
+	cursor, err := collection.Find(context.TODO(), filter, findOptions)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("Error finding projects")
+	}
+
+	// Get the results from the cursor
+	var results []types.Project
+	if err := cursor.All(context.TODO(), &results); err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error querying database: " + err.Error())
+	}
+
+	// Marshal the result to JSON
+	jsonBytes, err := json.Marshal(results)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
+	}
+
+	// Set the response headers and write the response body
+	c.Set("Content-Type", "application/json")
+	c.Status(http.StatusOK)
+	_, err = c.Write(jsonBytes)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error writing response: " + err.Error())
+	}
+	return nil
+}
+
 // CreateProject creates a new project in the database.
 // @Summary Create a project
 // @Description Creates a new project in the database.
@@ -623,4 +681,194 @@ func CancelProjectApplication(c *fiber.Ctx) error {
 
 	// Set the response headers and write the response body
 	return c.SendString("Response canceled successfully")
+}
+
+func ApproveApplicant(c *fiber.Ctx) error {
+	collection, err := db.GetCollection("projects")
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
+	}
+
+	var ids map[string]string
+	err = c.BodyParser(&ids)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
+	}
+
+	requsterId := c.Locals("user_id").(string)
+	requesterObjId, err := primitive.ObjectIDFromHex(requsterId)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+
+	// Get the project ID from the URL path parameter
+	projectId := ids["projectId"]
+
+	projectObjId, err := primitive.ObjectIDFromHex(projectId)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
+	}
+
+	// get project
+	filter := bson.M{"_id": projectObjId}
+	var project types.Project
+	err = collection.FindOne(context.TODO(), filter).Decode(&project)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
+	}
+
+	applicantId := ids["applicantId"]
+	applicantObjId, err := primitive.ObjectIDFromHex(applicantId)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("Invalid applicant ID")
+	}
+
+	if project.SuccessfulApplicants == nil {
+		project.SuccessfulApplicants = make(map[primitive.ObjectID]bool)
+	}
+	project.SuccessfulApplicants[applicantObjId] = true
+
+	projectApplicants := project.Applicants
+	delete(projectApplicants, applicantObjId)
+	project.Applicants = projectApplicants
+
+	// Update the project document in MongoDB
+	filter = bson.M{"_id": projectObjId}
+	update := bson.M{"$set": project}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
+	}
+
+	// update applicant
+	usersCollection, _ := db.GetCollection("users")
+
+	applicantFilter := bson.M{"_id": applicantObjId}
+	var applicant types.User
+	err = usersCollection.FindOne(context.TODO(), applicantFilter).Decode(&applicant)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	if applicant.ConfirmedApplications == nil {
+		applicant.ConfirmedApplications = make(map[primitive.ObjectID]primitive.ObjectID)
+	}
+	applicant.ConfirmedApplications[requesterObjId] = projectObjId
+
+	applicantUpdate := bson.M{"$set": applicant}
+	_, err = usersCollection.UpdateOne(context.TODO(), applicantFilter, applicantUpdate)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	// Set the response headers and write the response body
+	return c.SendString("Response sended successfully")
+}
+
+func RejectApplicant(c *fiber.Ctx) error {
+	collection, err := db.GetCollection("projects")
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error connecting to database: " + err.Error())
+	}
+
+	var ids map[string]string
+	err = c.BodyParser(&ids)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
+	}
+
+	requsterId := c.Locals("user_id").(string)
+	requesterObjId, err := primitive.ObjectIDFromHex(requsterId)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	}
+
+	// Get the project ID from the URL path parameter
+	projectId := ids["projectId"]
+
+	projectObjId, err := primitive.ObjectIDFromHex(projectId)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("Invalid project ID")
+	}
+
+	// get project
+	filter := bson.M{"_id": projectObjId}
+	var project types.Project
+	err = collection.FindOne(context.TODO(), filter).Decode(&project)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving updated project: " + err.Error())
+	}
+
+	applicantId := ids["applicantId"]
+	applicantObjId, err := primitive.ObjectIDFromHex(applicantId)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("Invalid applicant ID")
+	}
+
+	if project.RejectedApplicants == nil {
+		project.RejectedApplicants = make(map[primitive.ObjectID]bool)
+	}
+	project.RejectedApplicants[applicantObjId] = true
+
+	projectApplicants := project.Applicants
+	delete(projectApplicants, applicantObjId)
+	project.Applicants = projectApplicants
+
+	fmt.Println(project.Applicants)
+
+	// Update the project document in MongoDB
+	filter = bson.M{"_id": projectObjId}
+	update := bson.M{"$set": project}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error updating project: " + err.Error())
+	}
+
+	// update applicant
+	usersCollection, _ := db.GetCollection("users")
+
+	applicantFilter := bson.M{"_id": applicantObjId}
+	var applicant types.User
+	err = usersCollection.FindOne(context.TODO(), applicantFilter).Decode(&applicant)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	if applicant.RejectedApplicants == nil {
+		applicant.RejectedApplicants = make(map[primitive.ObjectID]primitive.ObjectID)
+	}
+	applicant.RejectedApplicants[requesterObjId] = projectObjId
+
+	applicantUpdate := bson.M{"$set": applicant}
+	_, err = usersCollection.UpdateOne(context.TODO(), applicantFilter, applicantUpdate)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	// Set the response headers and write the response body
+	return c.SendString("Response sended successfully")
 }
