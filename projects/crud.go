@@ -117,6 +117,12 @@ func GetProjects(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString(errMsg)
 	}
 
+	userRole := c.Locals("userRole")
+
+	if userRole != "admin" {
+		filter["moderation_status"] = "approved"
+	}
+
 	sort := utils.GetSort(c)
 	if len(sort) != 0 {
 		findOptions.SetSort(sort)
