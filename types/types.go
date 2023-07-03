@@ -54,6 +54,7 @@ type ContactsRequest struct {
 	OutgoingContactRequests   map[primitive.ObjectID]string `json:"outgoing_contact_requests" bson:"outgoing_contact_requests"`
 	ConfirmedContactsRequests map[primitive.ObjectID]string `json:"confirmed_contacts_requests" bson:"confirmed_contacts_requests"`
 	BlockedUsers              map[primitive.ObjectID]string `json:"blocked_users" bson:"blocked_users"`
+	ApprovedContacts          map[primitive.ObjectID]string `json:"approved_contacts" bson:"approved_contacts"`
 }
 
 type UserProjects struct {
