@@ -135,18 +135,16 @@ type NotificationResponse struct {
 }
 
 type Event struct {
-	ID               primitive.ObjectID   `json:"_id" bson:"_id,omitempty"`
-	CreatedBy        primitive.ObjectID   `json:"created_by" bson:"created_by,omitempty"`
-	Slug             string               `json:"slug"`
-	Cover            string               `json:"cover"`
-	Title            Translations         `json:"title"`
-	Description      Translations         `json:"description"`
-	Location         primitive.ObjectID   `json:"location" bson:"location,omitempty"`
-	Date             time.Time            `json:"date" validate:"required"`
-	TermsOfVisit     Translations         `json:"terms_of_visit" bson:"terms_of_visit"`
-	Tags             []primitive.ObjectID `json:"tags" validate:"required"`
-	ModerationStatus *ModerationStatus    `json:"moderation_status,omitempty" bson:"moderation_status,omitempty"`
-	ReasonOfReject   *string              `json:"reason_of_reject,omitempty" bson:"reason_of_reject,omitempty"`
+	ID          primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
+	CreatedBy   primitive.ObjectID `json:"created_by" bson:"created_by,omitempty"`
+	Slug        string             `json:"slug"`
+	Cover       string             `json:"cover"`
+	Title       Translations       `json:"title"`
+	Description Translations       `json:"description"`
+	Orgs        string             `json:"orgs"`
+	Location    primitive.ObjectID `json:"location" bson:"location,omitempty"`
+	Date        time.Time          `json:"date" validate:"required"`
+	Links       string             `json:"links" bson:"terms_of_visit"`
 }
 
 type ModerationStatus string
