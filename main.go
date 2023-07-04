@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	sentryfiber "github.com/aldy505/sentry-fiber"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -14,7 +15,6 @@ import (
 
 	_ "henar-backend/docs"
 
-	sentryfiber "github.com/aldy505/sentry-fiber"
 	"github.com/getsentry/sentry-go"
 )
 

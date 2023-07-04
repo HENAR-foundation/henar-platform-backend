@@ -84,8 +84,8 @@ func Setup(app *fiber.App) {
 	projectsGroup.Get("/:slug", projects.GetProject)
 
 	projectsGroupSecured := app.Group("/v1/projects", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
-	projectsGroupSecured_TEMP := app.Group("/v1", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
-	projectsGroupSecured_TEMP.Get("/my-projects", projects.GetSelfProjects)
+	projectsGroupSecured_TEMP := app.Group("/v1/my-projects", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
+	projectsGroupSecured_TEMP.Get("", projects.GetSelfProjects)
 	projectsGroupSecured.Post("", projects.CreateProject)
 	projectsGroupSecured.Post("/applicants/approve", projects.ApproveApplicant)
 	projectsGroupSecured.Post("/applicants/reject", projects.RejectApplicant)
