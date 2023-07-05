@@ -544,6 +544,7 @@ func RequestContacts(c *fiber.Ctx) error {
 	notificationsBody := types.NotificationBody{
 		PersonID:       requesterId,
 		PersonFullName: requester.FirstName + " " + requester.LastName,
+		Avatar:         requester.Avatar,
 	}
 	err = notifications.CreateNotification(types.ContactsRequested, approverId, notificationsBody)
 	if err != nil {
@@ -652,6 +653,7 @@ func ApproveContactsRequest(c *fiber.Ctx) error {
 	notificationBody := types.NotificationBody{
 		PersonID:       requesterId,
 		PersonFullName: requester.FirstName + " " + requester.LastName,
+		Avatar:         requester.Avatar,
 	}
 	err = notifications.CreateNotification(types.ContactsRequestApproved, requesterId, notificationBody)
 	if err != nil {

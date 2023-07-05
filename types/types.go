@@ -100,8 +100,10 @@ const (
 type NotificationType string
 
 const (
+	ApproveApplicant        NotificationType = "approve_applicant"
 	ContactsRequested       NotificationType = "contact_requested"
 	ContactsRequestApproved NotificationType = "contact_request_approved"
+	ProjectRequest          NotificationType = "project_request"
 	ProjectApproved         NotificationType = "project_approved"
 	ProjetcDeclined         NotificationType = "project_declined"
 	NewComment              NotificationType = "new_comment"
@@ -114,8 +116,9 @@ type NotificationAcceptiongRequestBody struct {
 type NotificationBody struct {
 	PersonID       primitive.ObjectID `json:"personId" bson:"person_id"`
 	PersonFullName string             `json:"personFullName" bson:"person_full_name"`
-	ProjectID      primitive.ObjectID `json:"projectId" bson:"project_id"`
+	ProjectID      string             `json:"projectId" bson:"project_id"`
 	ProjectTitle   string             `json:"projectTitle" bson:"project_title"`
+	Avatar         string             `json:"avatar" bson:"avatar"`
 }
 type Notification struct {
 	ID        primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
@@ -289,6 +292,7 @@ type Project struct {
 	Applicants           map[primitive.ObjectID]bool  `json:"applicants" bson:"applicants,omitempty"`
 	SuccessfulApplicants map[primitive.ObjectID]bool  `json:"successful_applicants" bson:"successful_applicants,omitempty"`
 	RejectedApplicants   map[primitive.ObjectID]bool  `json:"rejected_applicants" bson:"rejected_applicants,omitempty"`
+	Links                string                       `json:"links" bson:"links,omitempty"`
 }
 
 type Research struct {

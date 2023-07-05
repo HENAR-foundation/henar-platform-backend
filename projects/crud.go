@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"henar-backend/db"
+	"henar-backend/notifications"
 	"henar-backend/sentry"
 	"henar-backend/types"
 	"henar-backend/utils"
@@ -577,6 +578,10 @@ func RespondToProject(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
+	var requester types.User
+	requesterFilter := bson.M{"_id": requesterObjId}
+	err = usersCollection.FindOne(context.TODO(), requesterFilter).Decode(&requester)
+
 	if approver.ProjectsApplications == nil {
 		approver.ProjectsApplications = make(map[primitive.ObjectID]primitive.ObjectID)
 	}
@@ -587,6 +592,18 @@ func RespondToProject(c *fiber.Ctx) error {
 	if err != nil {
 		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	notificationBody := types.NotificationBody{
+		PersonID:       requesterObjId,
+		PersonFullName: requester.FirstName + " " + requester.LastName,
+		Avatar:         requester.Avatar,
+	}
+	err = notifications.CreateNotification(types.ProjectRequest, approverId, notificationBody)
+
+	if err != nil {
+		sentry.SentryHandler(err)
+		c.Status(http.StatusInternalServerError).SendString("Error creating notification:" + err.Error())
 	}
 
 	// Set the response headers and write the response body
@@ -777,6 +794,17 @@ func ApproveApplicant(c *fiber.Ctx) error {
 	if err != nil {
 		sentry.SentryHandler(err)
 		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	}
+
+	notificationBody := types.NotificationBody{
+		ProjectID:    *project.Slug,
+		ProjectTitle: project.Title.En,
+		Avatar:       applicant.Avatar,
+	}
+	err = notifications.CreateNotification(types.ApproveApplicant, applicantObjId, notificationBody)
+	if err != nil {
+		sentry.SentryHandler(err)
+		c.Status(http.StatusInternalServerError).SendString("Error creating notification:" + err.Error())
 	}
 
 	// Set the response headers and write the response body
