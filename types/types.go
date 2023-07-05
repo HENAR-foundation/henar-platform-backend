@@ -83,11 +83,10 @@ type UserBody struct {
 }
 
 type User struct {
-	ID                 primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
-	PasswordResetToken string             `json:"-" bson:"password_reset_token"`
-	PasswordResetAt    time.Time          `json:"-" bson:"password_reset_at"`
-	UserCredentials    `bson:"user_credentials"`
-	UserBody           `bson:"user_body"`
+	ID              primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
+	IsActivated     bool               `json:"-" bson:"is_activated"`
+	UserCredentials `bson:"user_credentials"`
+	UserBody        `bson:"user_body"`
 }
 
 type NotificationStatus string

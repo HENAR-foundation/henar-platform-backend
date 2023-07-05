@@ -61,6 +61,7 @@ func CreateUser(c *fiber.Ctx) error {
 	passwordString := string(Password)
 	specialist := types.Specialist
 	user := types.User{
+		IsActivated: false,
 		UserCredentials: types.UserCredentials{
 			Email:    uc.Email,
 			Password: &passwordString,
@@ -200,6 +201,10 @@ func UpdateUser(c *fiber.Ctx) error {
 		updateBody.Role = &specialist
 	} else if updateBody.Role == nil {
 		updateBody.Role = existingUser.Role
+	}
+
+	if updateBody.FirstName != "" && updateBody.LastName != "" {
+		updateBody.IsActivated = true
 	}
 
 	filter = bson.M{"_id": objId}
@@ -347,6 +352,7 @@ func GetUsers(c *fiber.Ctx) error {
 
 	if userRole != "admin" {
 		filter["user_body.role"] = "specialist"
+		filter["is_activated"] = true
 	}
 	sort := utils.GetSort(c)
 	if len(sort) != 0 {

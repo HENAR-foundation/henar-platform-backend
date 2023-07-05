@@ -50,6 +50,7 @@ func SignUp(c *fiber.Ctx) error {
 	passwordString := string(Password)
 	specialist := types.Specialist
 	user := types.User{
+		IsActivated: false,
 		UserCredentials: types.UserCredentials{
 			Email:    uc.Email,
 			Password: &passwordString,
@@ -242,18 +243,37 @@ func ForgotPassword(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
 	}
 
-	passwordResetToken := "resetToken"
-
-	user.PasswordResetToken = passwordResetToken
-	user.PasswordResetAt = time.Now().Add(time.Minute * 15)
-
-	filter = bson.M{"_id": user.ID}
-	update := bson.M{"$set": user}
-	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	// Hash the password
+	passwordResetToken, err := bcrypt.GenerateFromPassword(
+		[]byte(*&user.Email),
+		bcrypt.DefaultCost,
+	)
 	if err != nil {
 		sentry.SentryHandler(err)
-		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+		return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
 	}
+
+	// Comparing the hash
+	err = bcrypt.CompareHashAndPassword([]byte(user.Email), []byte(passwordResetToken))
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "ERROR TOKEN",
+		})
+	}
+
+	// passwordResetToken := "resetToken"
+
+	// user.PasswordResetToken = passwordResetToken
+	// user.PasswordResetAt = time.Now().Add(time.Minute * 15)
+
+	// filter = bson.M{"_id": user.ID}
+	// update := bson.M{"$set": user}
+	// _, err = collection.UpdateOne(context.TODO(), filter, update)
+	// if err != nil {
+	// 	sentry.SentryHandler(err)
+	// 	return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	// }
 
 	return c.SendString("You will receive a reset email if user with that email exist")
 }
@@ -318,7 +338,8 @@ func ResetPassword(c *fiber.Ctx) error {
 	passwordString := string(Password)
 
 	user.Password = &passwordString
-	user.PasswordResetToken = ""
+	// TODO: change token flow
+	// user.PasswordResetToken = ""
 
 	filter = bson.M{"_id": user.ID}
 	update := bson.M{"$set": user}
