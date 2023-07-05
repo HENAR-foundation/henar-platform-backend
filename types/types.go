@@ -295,15 +295,10 @@ type Project struct {
 }
 
 type Research struct {
-	ID               primitive.ObjectID   `json:"_id" bson:"_id,omitempty"`
-	CreatedBy        primitive.ObjectID   `json:"created_by" bson:"created_by,omitempty"`
-	Slug             string               `json:"slug"`
-	Title            Translations         `json:"title"`
-	Description      Translations         `json:"description"`
-	Tags             []primitive.ObjectID `json:"tags" validate:"required"`
-	Link             string               `json:"link" validate:"required"`
-	ModerationStatus *ModerationStatus    `json:"moderation_status" bson:"moderation_status,omitempty"`
-	ReasonOfReject   *string              `json:"reason_of_reject" bson:"reason_of_reject,omitempty"`
+	ID     primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
+	Title  string             `json:"title"`
+	Link   string             `json:"link" validate:"required"`
+	Source string             `json:"source" validate:"required"`
 }
 
 type Statistic struct {

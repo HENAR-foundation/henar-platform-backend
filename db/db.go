@@ -71,6 +71,11 @@ func initIndexes() {
 			Keys: "job",
 		},
 	}
+	researchIndexes := Indexes{
+		{
+			Keys: "title",
+		},
+	}
 	eventsIndexes := append(indexes, Indexes{
 		{
 			Keys: "location",
@@ -91,7 +96,7 @@ func initIndexes() {
 
 	// Add indexes
 	researches, _ := GetCollection("researches")
-	createIndex(researches, indexes)
+	createIndex(researches, researchIndexes)
 	projects, _ := GetCollection("projects")
 	createIndex(projects, projectIndexes)
 	events, _ := GetCollection("events")

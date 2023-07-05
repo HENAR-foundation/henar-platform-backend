@@ -3,7 +3,6 @@ package researches
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"henar-backend/db"
 	"henar-backend/sentry"
 	"henar-backend/types"
@@ -36,29 +35,29 @@ func GetResearches(c *fiber.Ctx) error {
 	collection, _ := db.GetCollection("researches")
 
 	// Get the filter and options for the query
-	findOptions, err := utils.GetPaginationOptions(c)
-	if err != nil {
-		sentry.SentryHandler(err)
+	// findOptions, err := utils.GetPaginationOptions(c)
+	// if err != nil {
+	// 	sentry.SentryHandler(err)
 
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
-	}
+	// 	return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
+	// }
 
-	filter, err := utils.GetFilter(c)
-	if err != nil {
-		sentry.SentryHandler(err)
+	// filter, err := utils.GetFilter(c)
+	// if err != nil {
+	// 	sentry.SentryHandler(err)
 
-		errMsg := fmt.Sprintf("Error getting projects filter: %v", err)
-		return c.Status(fiber.StatusInternalServerError).SendString(errMsg)
-	}
+	// 	errMsg := fmt.Sprintf("Error getting projects filter: %v", err)
+	// 	return c.Status(fiber.StatusInternalServerError).SendString(errMsg)
+	// }
 
-	sort := utils.GetSort(c)
-	if len(sort) != 0 {
-		findOptions.SetSort(sort)
-	}
+	// sort := utils.GetSort(c)
+	// if len(sort) != 0 {
+	// 	findOptions.SetSort(sort)
+	// }
 	// TODO: GET: User can't get pending | rejected entity
 
 	// Query the database and get the cursor
-	cursor, err := collection.Find(context.TODO(), filter, findOptions)
+	cursor, err := collection.Find(context.TODO(), bson.M{})
 	if err != nil {
 		sentry.SentryHandler(err)
 
@@ -70,7 +69,7 @@ func GetResearches(c *fiber.Ctx) error {
 	if err = cursor.All(context.TODO(), &results); err != nil {
 		sentry.SentryHandler(err)
 
-		return c.Status(http.StatusInternalServerError).SendString("Error finding reseaches")
+		return c.Status(http.StatusInternalServerError).SendString("Error finding reseaches" + err.Error())
 	}
 	if c.Locals("userRole") != "admin" {
 		fieldsToUpdate := []string{"ModerationStatus", "ReasonOfReject"}
@@ -124,14 +123,6 @@ func GetResearch(c *fiber.Ctx) error {
 		}
 		return c.Status(fiber.StatusInternalServerError).SendString("Error getting research: " + err.Error())
 	}
-
-	if c.Locals("userRole") != "admin" &&
-		c.Locals("user_id") != result.CreatedBy.Hex() {
-		fieldsToUpdate := []string{"ModerationStatus", "ReasonOfReject"}
-		utils.UpdateResultForUserRole(&result, fieldsToUpdate)
-	}
-
-	// Marshal the research struct to JSON format
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
 		sentry.SentryHandler(err)
@@ -183,11 +174,6 @@ func CreateResearch(c *fiber.Ctx) error {
 
 		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
 	}
-	research.CreatedBy = userId
-	pending := types.Pending
-	research.ModerationStatus = &pending
-	slugText := utils.CreateSlug(research.Title)
-	research.Slug = slugText
 
 	// Insert research document into MongoDB
 	result, err := collection.InsertOne(context.TODO(), research)
@@ -292,26 +278,6 @@ func UpdateResearch(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error getting research: " + err.Error())
 	}
 
-	if c.Locals("userRole") != "admin" &&
-		c.Locals("user_id") != result.CreatedBy.Hex() {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"message": "Permission or ownership error",
-		})
-	}
-
-	if c.Locals("userRole") != "admin" {
-		// owner can't edit the following fields
-		if updateBody.ModerationStatus != nil ||
-			updateBody.ReasonOfReject != nil {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"message": "Permission or ownership error",
-			})
-		}
-	}
-
-	slugText := utils.CreateSlug(updateBody.Title)
-	updateBody.Slug = slugText
-
 	// Update the research document in MongoDB
 	filter := bson.M{"_id": objId}
 	update := bson.M{"$set": updateBody}
@@ -348,81 +314,80 @@ func UpdateResearch(c *fiber.Ctx) error {
 // @Failure 500 {string} string "Error deleting research: <error message>"
 // @Router /v1/researches/{id} [delete]
 func DeleteResearch(c *fiber.Ctx) error {
-	collection, _ := db.GetCollection("researches")
+	// collection, _ := db.GetCollection("researches")
 
-	// Get the research ID from the URL path parameter
-	researchId := c.Params("id")
-	researchObjId, err := primitive.ObjectIDFromHex(researchId)
-	if err != nil {
-		sentry.SentryHandler(err)
+	// // Get the research ID from the URL path parameter
+	// researchId := c.Params("id")
+	// researchObjId, err := primitive.ObjectIDFromHex(researchId)
+	// if err != nil {
+	// 	sentry.SentryHandler(err)
 
-		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
-	}
+	// 	return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	// }
 
-	// Find the research document from MongoDB
-	var research types.Research
-	err = collection.FindOne(context.TODO(), bson.M{"_id": researchObjId}).Decode(&research)
-	if err != nil {
-		sentry.SentryHandler(err)
+	// // Find the research document from MongoDB
+	// var research types.Research
+	// err = collection.FindOne(context.TODO(), bson.M{"_id": researchObjId}).Decode(&research)
+	// if err != nil {
+	// 	sentry.SentryHandler(err)
 
-		if err == mongo.ErrNoDocuments {
-			return c.Status(fiber.StatusNotFound).SendString("Research not found")
-		}
-		return c.Status(fiber.StatusInternalServerError).SendString("Error getting research: " + err.Error())
-	}
+	// 	if err == mongo.ErrNoDocuments {
+	// 		return c.Status(fiber.StatusNotFound).SendString("Research not found")
+	// 	}
+	// 	return c.Status(fiber.StatusInternalServerError).SendString("Error getting research: " + err.Error())
+	// }
 
-	userId := c.Locals("user_id").(string)
-	if c.Locals("userRole") != "admin" &&
-		userId != research.CreatedBy.Hex() {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"message": "Permission or ownership error",
-		})
-	}
+	// // userId := c.Locals("user_id").(string)
+	// // if c.Locals("userRole") != "admin" &&
+	// // 	userId != research.CreatedBy.Hex() {
+	// // 	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+	// // 		"message": "Permission or ownership error",
+	// // 	})
+	// // }
 
-	researchFilter := bson.D{{Key: "_id", Value: researchObjId}}
+	// researchFilter := bson.D{{Key: "_id", Value: researchObjId}}
 
-	// Delete research document from MongoDB
-	result, err := collection.DeleteOne(context.TODO(), researchFilter)
-	if err != nil {
-		sentry.SentryHandler(err)
+	// // Delete research document from MongoDB
+	// result, err := collection.DeleteOne(context.TODO(), researchFilter)
+	// if err != nil {
+	// 	sentry.SentryHandler(err)
 
-		return c.Status(http.StatusInternalServerError).SendString("Error deleting research: " + err.Error())
-	}
+	// 	return c.Status(http.StatusInternalServerError).SendString("Error deleting research: " + err.Error())
+	// }
 
-	// Check if any documents were deleted
-	if result.DeletedCount == 0 {
-		return c.Status(http.StatusNotFound).SendString("Research not found")
-	}
+	// // Check if any documents were deleted
+	// if result.DeletedCount == 0 {
+	// 	return c.Status(http.StatusNotFound).SendString("Research not found")
+	// }
 
-	// update user
-	usersCollection, _ := db.GetCollection("users")
-	userObjId, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		sentry.SentryHandler(err)
+	// // update user
+	// usersCollection, _ := db.GetCollection("users")
+	// if err != nil {
+	// 	sentry.SentryHandler(err)
 
-		return c.Status(http.StatusBadRequest).SendString("Invalid ID")
-	}
-	var user types.User
-	userFilter := bson.M{"_id": userObjId}
-	err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
-	if err != nil {
-		sentry.SentryHandler(err)
+	// 	return c.Status(http.StatusBadRequest).SendString("Invalid ID")
+	// }
+	// var user types.User
+	// userFilter := bson.M{"_id": userObjId}
+	// err = usersCollection.FindOne(context.TODO(), userFilter).Decode(&user)
+	// if err != nil {
+	// 	sentry.SentryHandler(err)
 
-		if err == mongo.ErrNoDocuments {
-			return c.Status(http.StatusNotFound).SendString("User not found")
-		}
-		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
-	}
+	// 	if err == mongo.ErrNoDocuments {
+	// 		return c.Status(http.StatusNotFound).SendString("User not found")
+	// 	}
+	// 	return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	// }
 
-	delete(user.Researches, researchObjId)
+	// delete(user.Researches, researchObjId)
 
-	update := bson.M{"$set": user}
-	_, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
-	if err != nil {
-		sentry.SentryHandler(err)
+	// update := bson.M{"$set": user}
+	// _, err = usersCollection.UpdateOne(context.TODO(), userFilter, update)
+	// if err != nil {
+	// 	sentry.SentryHandler(err)
 
-		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
-	}
+	// 	return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+	// }
 
 	return c.SendString("Research deleted successfully")
 }
