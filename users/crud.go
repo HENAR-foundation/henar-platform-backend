@@ -299,17 +299,19 @@ func GetUser(c *fiber.Ctx) error {
 	}
 
 	// hide fields for not admin, not owner and not approved requester
-	if userRole != "admin" &&
-		userId != user.ID {
-		if user.ConfirmedContactsRequests[userObjId] == "" &&
-			user.ConfirmedApplications[userObjId] == primitive.NilObjectID {
-			fieldsToUpdate := []string{
-				"Contacts", "ContactsRequest", "UserProjects", "UserCredentials",
-				"Location", "Language",
-			}
-			utils.UpdateResultForUserRole(&user, fieldsToUpdate)
+	if userObjId != user.ID {
+		if userRole != "admin" {
+			if user.ConfirmedContactsRequests[userObjId] == "" &&
+				user.ConfirmedApplications[userObjId] == primitive.NilObjectID {
+				fmt.Println("hello")
+				fieldsToUpdate := []string{
+					"Contacts", "ContactsRequest", "UserProjects", "UserCredentials",
+					"Location", "Language",
+				}
+				utils.UpdateResultForUserRole(&user, fieldsToUpdate)
 
-			return c.Status(http.StatusOK).JSON(user)
+				return c.Status(http.StatusOK).JSON(user)
+			}
 		}
 	}
 
