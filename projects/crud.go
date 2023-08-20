@@ -225,6 +225,85 @@ func GetSelfProjects(c *fiber.Ctx) error {
 	return nil
 }
 
+func GetUserProjects(c *fiber.Ctx) error {
+	projectsCollection, _ := db.GetCollection("projects")
+	usersCollection, _ := db.GetCollection("users")
+
+	userId := c.Locals("user_id")
+
+	if userId == nil {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"message": "not authorized",
+		})
+	}
+
+	id := c.Params("id")
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	filter := bson.M{"_id": objId}
+
+	var user types.User
+	err := usersCollection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+	// Get the filter and options for the query
+	findOptions, err := utils.GetPaginationOptions(c)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid pagination parameters")
+	}
+
+	userConfirmedProjectsIds := make([]primitive.ObjectID, 0, len(user.ConfirmedApplications))
+
+	for _, _id := range user.ConfirmedApplications {
+		userConfirmedProjectsIds = append(userConfirmedProjectsIds, _id)
+	}
+	fmt.Println(userConfirmedProjectsIds)
+
+	filter = bson.M{"_id": bson.M{"$in": userConfirmedProjectsIds}}
+
+	sort := utils.GetSort(c)
+	if len(sort) != 0 {
+		findOptions.SetSort(sort)
+	}
+
+	// Query the database and get the cursor
+	cursor, err := projectsCollection.Find(context.TODO(), filter)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("Error finding projects")
+	}
+
+	// Get the results from the cursor
+	var results []types.Project
+	if err := cursor.All(context.TODO(), &results); err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error querying database: " + err.Error())
+	}
+
+	// Marshal the result to JSON
+	jsonBytes, err := json.Marshal(results)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error encoding JSON: " + err.Error())
+	}
+
+	// Set the response headers and write the response body
+	c.Set("Content-Type", "application/json")
+	c.Status(http.StatusOK)
+	_, err = c.Write(jsonBytes)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusInternalServerError).SendString("Error writing response: " + err.Error())
+	}
+	return nil
+}
+
 // CreateProject creates a new project in the database.
 // @Summary Create a project
 // @Description Creates a new project in the database.
@@ -351,6 +430,14 @@ func UpdateProject(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
+	var views int64
+
+	if updateBody.Views == nil {
+		views = int64(0)
+	} else {
+		views = *updateBody.Views
+	}
+
 	// Validate the required fields
 	v := validator.New()
 	v.RegisterValidation("enum", types.ValidateEnum)
@@ -370,7 +457,6 @@ func UpdateProject(c *fiber.Ctx) error {
 		}
 		return c.Status(http.StatusInternalServerError).SendString("Error finding project: " + err.Error())
 	}
-
 	if c.Locals("userRole") != "admin" &&
 		c.Locals("user_id") != project.CreatedBy.Hex() {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
@@ -395,6 +481,7 @@ func UpdateProject(c *fiber.Ctx) error {
 
 	slugText := utils.CreateSlug(updateBody.Title)
 	updateBody.Slug = &slugText
+	updateBody.Views = &views
 
 	// Update the project document in MongoDB
 	filter := bson.M{"_id": objId}

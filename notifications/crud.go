@@ -41,11 +41,15 @@ func GetNotifications(c *fiber.Ctx) error {
 	notificationsCollection, _ := db.GetCollection("notifications")
 	notificationsFilter := bson.M{"_id": bson.M{"$in": user.Notifications}}
 
+	if len(user.Notifications) == 0 {
+		c.Status(http.StatusOK).JSON(nil)
+		return nil
+	}
+
 	cursor, err := notificationsCollection.Find(context.TODO(), notificationsFilter)
 	if err != nil {
 		sentry.SentryHandler(err)
-
-		return c.Status(http.StatusInternalServerError).SendString("Error finding notifications")
+		return c.Status(http.StatusInternalServerError).SendString("Error finding notifications" + err.Error())
 	}
 
 	var results []types.NotificationResponse

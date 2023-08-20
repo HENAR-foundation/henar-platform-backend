@@ -8,6 +8,7 @@ import (
 	"henar-backend/researches"
 	"henar-backend/static"
 	"henar-backend/statistics"
+	"henar-backend/statisticsCategories"
 	"henar-backend/tags"
 	"henar-backend/users"
 	"time"
@@ -68,6 +69,16 @@ func Setup(app *fiber.App) {
 	statisticsGroupSecured.Patch("/:id", statistics.UpdateStatistic)
 	statisticsGroupSecured.Delete("/:id", statistics.DeleteStatistic)
 
+	// statistics categories
+	statisticsCategoriesGroup := app.Group("/v1/statistics-categories")
+	statisticsCategoriesGroup.Get("", statisticsCategories.GetStatisticsCategories)
+	statisticsCategoriesGroup.Get("/:id", statisticsCategories.GetStatisticsCategory)
+
+	statisticsCategoriesGroupSecured := app.Group("/v1/statistics-categories", SessionMiddleware, AdminMiddleware)
+	statisticsCategoriesGroupSecured.Post("", statisticsCategories.CreateStatisticsCategory)
+	statisticsCategoriesGroupSecured.Patch("/:id", statisticsCategories.UpdateStatisticsCategory)
+	statisticsCategoriesGroupSecured.Delete("/:id", statisticsCategories.DeleteStatisticsCategory)
+
 	// Tags routes
 	tagsGroup := app.Group("/v1/tags")
 	tagsGroup.Get("", tags.GetTags)
@@ -82,6 +93,7 @@ func Setup(app *fiber.App) {
 	projectsGroup := app.Group("/v1/projects", AuthorMiddleware, AdminMiddleware)
 	projectsGroup.Get("", projects.GetProjects)
 	projectsGroup.Get("/:slug", projects.GetProject)
+	projectsGroup.Get("/user-projects/:id", projects.GetUserProjects)
 
 	projectsGroupSecured := app.Group("/v1/projects", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
 	projectsGroupSecured_TEMP := app.Group("/v1/my-projects", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
@@ -98,7 +110,7 @@ func Setup(app *fiber.App) {
 	// Researches routes
 	researchesGroup := app.Group("/v1/researches", AdminMiddleware, AuthorMiddleware)
 	researchesGroup.Get("", researches.GetResearches)
-	researchesGroup.Get("/:slug", researches.GetResearch)
+	researchesGroup.Get("/:id", researches.GetResearch)
 
 	researchesGroupSecured := app.Group("/v1/researches", SessionMiddleware, AdminMiddleware, AuthorMiddleware)
 	researchesGroupSecured.Post("", researches.CreateResearch)
@@ -117,13 +129,20 @@ func Setup(app *fiber.App) {
 	usersGroupSecured.Delete("/:id", users.DeleteUser)
 
 	// user contacts request handlers
-	usersGroupSecured.Post("request-contacts/:id", users.RequestContacts)
-	usersGroupSecured.Get("approve-contacts-request/:id", users.ApproveContactsRequest)
-	usersGroupSecured.Get("reject-contacts-request/:id", users.RejectContactsRequest)
+	usersGroupSecured.Post("/request-contacts/:id", users.RequestContacts)
+	usersGroupSecured.Get("/approve-contacts-request/:id", users.ApproveContactsRequest)
+	usersGroupSecured.Get("/reject-contacts-request/:id", users.RejectContactsRequest)
 
 	// user projects request handlers
-	usersGroupSecured.Get("approve-project-request/:id", users.ApproveProjectRequest)
-	usersGroupSecured.Get("reject-project-request/:id", users.RejectProjectRequest)
+	usersGroupSecured.Get("/approve-project-request/:id", users.ApproveProjectRequest)
+	usersGroupSecured.Get("/reject-project-request/:id", users.RejectProjectRequest)
+
+	// admining users
+	usersGroupAdmin := app.Group("/v1/users", SessionMiddleware, AdminMiddleware)
+	usersGroupAdmin.Get("/ban/:id", users.BanUser)
+	usersGroupAdmin.Get("/unban/:id", users.UnbanUser)
+	usersGroupAdmin.Get("/make-admin/:id", users.AddUserToAdmins)
+	usersGroupAdmin.Get("/remove-admin/:id", users.RemoveUserFromAdmins)
 
 	staticGroup := app.Group("/v1/files")
 	staticGroup.Post("/upload", static.UploadFile)

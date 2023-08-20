@@ -13,8 +13,8 @@ import (
 var client *mongo.Client
 
 func GetClientOptions() *options.ClientOptions {
-	// dburi := "mongodb+srv://doadmin:Y6krY4thlZAM7jeP@cluster0.fz184bf.mongodb.net/test"
-	dburi := "mongodb+srv://doadmin:g3k615i2p89A7IwD@henar-db-0d7d8f8e.mongo.ondigitalocean.com/?retryWrites=true&w=majority"
+	dburi := "mongodb+srv://doadmin:Y6krY4thlZAM7jeP@cluster0.fz184bf.mongodb.net/test"
+	// dburi := "mongodb+srv://doadmin:g3k615i2p89A7IwD@henar-db-0d7d8f8e.mongo.ondigitalocean.com/?retryWrites=true&w=majority"
 
 	serverAPIOptions := options.ServerAPI(options.ServerAPIVersion1)
 	clientOptions := options.Client().
@@ -113,7 +113,7 @@ func InitDb() {
 		log.Fatal(err)
 	} else {
 		client = newClient
-		initIndexes()
+		// initIndexes()
 	}
 }
 

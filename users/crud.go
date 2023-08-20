@@ -379,8 +379,12 @@ func GetUsers(c *fiber.Ctx) error {
 			sentry.SentryHandler(err)
 			return c.Status(http.StatusInternalServerError).SendString("Error decoding user: " + err.Error())
 		}
-		user.Password = nil
-		users = append(users, user)
+
+		if userRole == "admin" || !user.Banned {
+			user.Password = nil
+			users = append(users, user)
+		}
+
 	}
 
 	if userRole != "admin" {
@@ -1055,4 +1059,166 @@ func UpdatePassword(c *fiber.Ctx) error {
 	}
 
 	return c.SendString("Password successfully updated")
+}
+
+func BanUser(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+	// TODO: dont send projects for author
+	// Parse the user ID from the request parameters
+	id := c.Params("id")
+
+	// Convert the user ID string to an ObjectID
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	// Retrieve the user from MongoDB
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{"_id": objId}
+	var user types.User
+	err := collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+	user.Banned = true
+	update := bson.M{"$set": user}
+
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("Failed to ban user")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	return c.Status(http.StatusOK).JSON("OK")
+}
+
+func UnbanUser(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+	// TODO: dont send projects for author
+	// Parse the user ID from the request parameters
+	id := c.Params("id")
+
+	// Convert the user ID string to an ObjectID
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	// Retrieve the user from MongoDB
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{"_id": objId}
+	var user types.User
+	err := collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+	user.Banned = false
+	update := bson.M{"$set": user}
+
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("Failed to unban user")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	return c.Status(http.StatusOK).JSON("OK")
+}
+
+func AddUserToAdmins(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+	// TODO: dont send projects for author
+	// Parse the user ID from the request parameters
+	id := c.Params("id")
+
+	// Convert the user ID string to an ObjectID
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	// Retrieve the user from MongoDB
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{"_id": objId}
+	var user types.User
+	err := collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+	admin := types.Admin
+	user.Role = &admin
+	update := bson.M{"$set": user}
+
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("Failed to unban user")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	return c.Status(http.StatusOK).JSON("OK")
+}
+
+func RemoveUserFromAdmins(c *fiber.Ctx) error {
+	if c.Locals("userRole") != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Permission or ownership error",
+		})
+	}
+	// TODO: dont send projects for author
+	// Parse the user ID from the request parameters
+	id := c.Params("id")
+
+	// Convert the user ID string to an ObjectID
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	// Retrieve the user from MongoDB
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{"_id": objId}
+	var user types.User
+	err := collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("User not found")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+	specialist := types.Specialist
+	user.Role = &specialist
+	update := bson.M{"$set": user}
+
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return c.Status(http.StatusNotFound).SendString("Failed to unban user")
+		}
+		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+	}
+
+	return c.Status(http.StatusOK).JSON("OK")
 }
