@@ -8,7 +8,6 @@ env:
   REGISTRY: "registry.digitalocean.com/henar"
   IMAGE_NAME: "henar-backend"
   CONTAINER_NAME: "henar-backend"
-  APP_ENV: "production"
 
 jobs:
   build:
@@ -42,7 +41,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          envs: IMAGE_NAME, REGISTRY, CONTAINER_NAME, GITHUB_SHA, APP_ENV
+          envs: IMAGE_NAME, REGISTRY, CONTAINER_NAME, GITHUB_SHA
           script:
             docker login -u ${{ secrets.DO_API_KEY }} -p ${{ secrets.DO_API_KEY }} $(echo $REGISTRY)
 
@@ -50,4 +49,4 @@ jobs:
 
             docker rm $(echo $CONTAINER_NAME) || true
 
-            docker run -d --name $(echo $CONTAINER_NAME) -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
+            docker run -d --name $(echo $CONTAINER_NAME) -e APP_ENV='production' -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)

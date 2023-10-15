@@ -22,6 +22,6 @@ WORKDIR /root/
 COPY --from=builder /henar-backend/app .
 EXPOSE 8080
 
-ENV SENTRY_DSN=$SENTRY_DSN_ARG
+ENV SENTRY_DSN=${SENTRY_DSN_ARG}
 
 CMD [ "./app" ]
