@@ -24,7 +24,7 @@ import (
 // @BasePath /
 func main() {
 	err := sentry.Init(sentry.ClientOptions{
-		Dsn:              "https://f300b5ba174943da96182e14608f713a@o4505416350433280.ingest.sentry.io/4505421678968832",
+		Dsn:              "https://ae6e801d7f7ef33cf287e5e8f306dc8a@o4506049431863296.ingest.sentry.io/4506049440972800",
 		TracesSampleRate: 1.0,
 	})
 	if err != nil {
