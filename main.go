@@ -5,6 +5,7 @@ import (
 	"henar-backend/routes"
 	"henar-backend/static"
 	"log"
+	"os"
 	"time"
 
 	sentryfiber "github.com/aldy505/sentry-fiber"
@@ -23,6 +24,8 @@ import (
 // @host localhost:8080
 // @BasePath /
 func main() {
+	sentryDsn := os.Getenv("SENTRY_DSN")
+
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              "https://ae6e801d7f7ef33cf287e5e8f306dc8a@o4506049431863296.ingest.sentry.io/4506049440972800",
 		TracesSampleRate: 1.0,
@@ -34,6 +37,10 @@ func main() {
 	defer sentry.Flush(2 * time.Second)
 
 	sentry.CaptureMessage("It works!")
+
+	if os.Getenv("APP_ENV") == "production" {
+		sentry.CaptureMessage(sentryDsn)
+	}
 
 	db.InitDb()
 
