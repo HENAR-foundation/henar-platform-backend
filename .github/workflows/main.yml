@@ -20,8 +20,7 @@ jobs:
       - name: build image
         run:
           docker build -t $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7) \
-          --build-arg SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
-          .
+          --build-arg SENTRY_DSN=${{ secrets.SENTRY_DSN }} .
 
       - name: install doctl
         uses: digitalocean/action-doctl@v2
