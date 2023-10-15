@@ -48,4 +48,4 @@ jobs:
 
             docker rm $(echo $CONTAINER_NAME) || true
 
-            docker run -d -e APP_ENV='production' -e SENTRY_DSN=${{ secrets.SENTRY_DSN }} -e DB_URI='mongodb+srv://doadmin:g3k615i2p89A7IwD@henar-db-0d7d8f8e.mongo.ondigitalocean.com/?retryWrites=true&w=majority' --name $(echo $CONTAINER_NAME) -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
+            docker run -d -e APP_ENV='production' -e SENTRY_DSN=${{ secrets.SENTRY_DSN }} -e DB_URI="${{ secrets.DB_URI }}" --name $(echo $CONTAINER_NAME) -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
