@@ -14,6 +14,7 @@ import (
 var client *mongo.Client
 
 func GetClientOptions() *options.ClientOptions {
+	//
 	dburi := os.Getenv("DB_URI")
 
 	serverAPIOptions := options.ServerAPI(options.ServerAPIVersion1)
