@@ -1,23 +1,27 @@
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
-env: 
+env:
   REGISTRY: "registry.digitalocean.com/henar"
   IMAGE_NAME: "henar-backend"
   CONTAINER_NAME: "henar-backend"
+  APP_ENV: "production"
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps: 
+    steps:
       - name: checkout main
         uses: actions/checkout@v2
 
       - name: build image
-        run: docker build -t $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7) .
+        run:
+          docker build -t $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7) \
+          --build-arg SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
+          .
 
       - name: install doctl
         uses: digitalocean/action-doctl@v2
@@ -33,14 +37,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    steps: 
+    steps:
       - name: deploy
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          envs: IMAGE_NAME, REGISTRY, CONTAINER_NAME, GITHUB_SHA
+          envs: IMAGE_NAME, REGISTRY, CONTAINER_NAME, GITHUB_SHA, APP_ENV
           script:
             docker login -u ${{ secrets.DO_API_KEY }} -p ${{ secrets.DO_API_KEY }} $(echo $REGISTRY)
 
@@ -48,4 +52,4 @@ jobs:
 
             docker rm $(echo $CONTAINER_NAME) || true
 
-            docker run -d --name $(echo $CONTAINER_NAME) -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)              
+            docker run -d --name $(echo $CONTAINER_NAME) -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
