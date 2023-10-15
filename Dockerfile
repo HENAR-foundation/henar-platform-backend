@@ -1,7 +1,5 @@
 FROM golang:1.20 AS builder
 
-ARG SENTRY_DSN_ARG
-
 RUN go version
 RUN apt-get install git
 
@@ -21,7 +19,5 @@ WORKDIR /root/
 
 COPY --from=builder /henar-backend/app .
 EXPOSE 8080
-
-ENV SENTRY_DSN=${SENTRY_DSN_ARG}
 
 CMD [ "./app" ]

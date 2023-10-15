@@ -17,8 +17,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: build image
-        run:
-          docker build -t $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7) --build-arg SENTRY_DSN=${{ secrets.SENTRY_DSN }} .
+        run: docker build -t $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7) .
 
       - name: install doctl
         uses: digitalocean/action-doctl@v2
@@ -49,4 +48,4 @@ jobs:
 
             docker rm $(echo $CONTAINER_NAME) || true
 
-            docker run -d --name $(echo $CONTAINER_NAME) -e APP_ENV='production' -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
+            docker run -d --name $(echo $CONTAINER_NAME) -e APP_ENV='production' -e SENTRY_DSN=${{ secrets.SENTRY_DSN }} -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
