@@ -13,11 +13,22 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
+	"github.com/joho/godotenv"
 
 	_ "henar-backend/docs"
 
 	"github.com/getsentry/sentry-go"
 )
+
+func init() {
+	if os.Getenv("APP_ENV") != "production" {
+		err := godotenv.Load(".env")
+
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
+	}
+}
 
 // @title Henar
 // @version 1.0
@@ -27,7 +38,7 @@ func main() {
 	sentryDsn := os.Getenv("SENTRY_DSN")
 
 	err := sentry.Init(sentry.ClientOptions{
-		Dsn:              "https://ae6e801d7f7ef33cf287e5e8f306dc8a@o4506049431863296.ingest.sentry.io/4506049440972800",
+		Dsn:              sentryDsn,
 		TracesSampleRate: 1.0,
 	})
 	if err != nil {
@@ -37,10 +48,6 @@ func main() {
 	defer sentry.Flush(2 * time.Second)
 
 	sentry.CaptureMessage("It works!")
-
-	if os.Getenv("APP_ENV") == "production" {
-		sentry.CaptureMessage(sentryDsn)
-	}
 
 	db.InitDb()
 
