@@ -59,17 +59,17 @@ func (c *MailjetClient) SendEmail(toEmail, name, subject, textPart, htmlPart str
 	}
 
 	messages := mailjet.MessagesV31{Info: messagesInfo}
-	res, err := c.client.SendMailV31(&messages)
+	_, err := c.client.SendMailV31(&messages)
 	if err != nil {
 		sentry.SentryHandler(err)
 	}
-	fmt.Printf("Email Data: %+v\n", res)
+
 	return err
 }
 
 func (c *MailjetClient) SendConfirmationEmail(verificationData types.VerificationData) error {
 	subject := "Confirmation Email"
-	verifyUrl := fmt.Sprintf("https://healthnet.am/verify-email/%s?email=%s", verificationData.Code, verificationData.Email)
+	verifyUrl := fmt.Sprintf("https://healthnet.am/verify-email/%s", verificationData.Code)
 	textPart := fmt.Sprintf("Hello! Thank you for joining Henar! Copy this code %s or Click the following link to confirm your email:  %s", verificationData.Code, verifyUrl)
 	htmlPart := fmt.Sprintf(`<p>Hello! Thank you for joining Henar!</p><p>Copy this code <span><strong>%s</strong></span></p> <p> or Click the following link to confirm your email: <a href="%s">%s</a></p><p>If you didn't requested this email please ignore it.</p> <br><br><p>Henar Foundation</p>`, verificationData.Code, verifyUrl, verifyUrl)
 

@@ -8,6 +8,10 @@ import (
 	"henar-backend/types"
 	"time"
 
+	"crypto/sha256"
+	"encoding/hex"
+	"os"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,15 +21,27 @@ import (
 )
 
 func CreateVerificationData(userId primitive.ObjectID, email string, resendAttempts ...int) (types.VerificationData, error) {
-	verificationDataCollection, _ := db.GetCollection("verificationData")
-	code := uuid.New().String()
+	secretKey, ok := os.LookupEnv("SECRET_KEY")
+	if !ok {
+		return types.VerificationData{}, errors.New("key not found in environment")
+	}
+
+	randomString := uuid.New().String()
+	userIDString := userId.Hex()
+	tokenData := randomString + userIDString + secretKey
+
+	// Hash the combined data using SHA-256
+	hash := sha256.New()
+	hash.Write([]byte(tokenData))
+	hashedToken := hex.EncodeToString(hash.Sum(nil))
+
 	expirationTime := time.Now().Add(24 * time.Hour)
 
 	verificationData := types.VerificationData{
 		ID:        primitive.NewObjectID(),
 		User:      userId,
 		Email:     email,
-		Code:      code,
+		Code:      hashedToken,
 		CreatedAt: time.Now(),
 		ExpiresAt: expirationTime,
 	}
@@ -35,6 +51,8 @@ func CreateVerificationData(userId primitive.ObjectID, email string, resendAttem
 	} else {
 		verificationData.ResendAttempts = 0
 	}
+
+	verificationDataCollection, _ := db.GetCollection("verificationData")
 
 	_, err := verificationDataCollection.InsertOne(context.TODO(), verificationData)
 
@@ -139,6 +157,12 @@ func checkVerificationStatus(user types.User) error {
 
 func UpdateVerificationData(email string, c *fiber.Ctx) (types.VerificationData, error) {
 	const MaxResendLimit = 5
+
+	secretKey, ok := os.LookupEnv("SECRET_KEY")
+	if !ok {
+		return types.VerificationData{}, errors.New("key not found in environment")
+	}
+
 	verificationDataCollection, _ := db.GetCollection("verificationData")
 
 	filter := bson.M{"email": email}
@@ -160,7 +184,14 @@ func UpdateVerificationData(email string, c *fiber.Ctx) (types.VerificationData,
 	}
 
 	// Generate a new verification code
-	newCode := uuid.New().String()
+	randomString := uuid.New().String()
+	userIDString := verificationData.User.Hex()
+	tokenData := randomString + userIDString + secretKey
+
+	// Hash the combined data using SHA-256
+	hash := sha256.New()
+	hash.Write([]byte(tokenData))
+	newCode := hex.EncodeToString(hash.Sum(nil))
 
 	update := bson.M{
 		"$set": bson.M{
@@ -181,6 +212,25 @@ func UpdateVerificationData(email string, c *fiber.Ctx) (types.VerificationData,
 	).Decode(&verificationData); err != nil {
 		sentry.SentryHandler(err)
 		return types.VerificationData{}, err
+	}
+
+	return verificationData, nil
+}
+
+func FindVerificationDataByCode(code string) (types.VerificationData, error) {
+	verificationDataCollection, _ := db.GetCollection("verificationData")
+
+	filter := bson.M{"code": code}
+	var verificationData types.VerificationData
+
+	err := verificationDataCollection.FindOne(context.TODO(), filter).Decode(&verificationData)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			sentry.SentryHandler(err)
+			return types.VerificationData{}, errors.New("code not found")
+		}
+		sentry.SentryHandler(err)
+		return types.VerificationData{}, errors.New("error finding verification data")
 	}
 
 	return verificationData, nil

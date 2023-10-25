@@ -387,12 +387,12 @@ func ResetPassword(c *fiber.Ctx) error {
 // @Success 200 {string} string "Email confirmed successfully"
 // @Failure 400 {string} string "The secret code is invalid or has expired"
 // @Failure 500 {string} string "Error verifying email"
-// @Router /auth/verify-email/{secret_code} [get]
+// @Router /auth/verify-email/ [post]
 func VerifyEmail(c *fiber.Ctx) error {
 	token := c.Query("secret_code")
 
 	v := validator.New()
-	err := v.Var(token, "required,uuid")
+	err := v.Var(token, "required,hexadecimal")
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Error validating code " + err.Error()})
 	}
@@ -428,18 +428,37 @@ func VerifyEmail(c *fiber.Ctx) error {
 // @Success 200 {string} string "email resent successfully"
 // @Failure 400 {string} string "email not found"
 // @Failure 500 {string} string "Error resending email"
-// @Router /auth/verify-email/{email} [get]
+// @Router /auth/verify-email/{token, email} [post]
 func ResendVerificationEmail(c *fiber.Ctx) error {
-	userEmail := c.Query("email")
+	var payload types.ResendVerificationEmail
+	err := c.BodyParser(&payload)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
+	}
 
 	v := validator.New()
-	err := v.Var(userEmail, "required,email")
+	err = v.Struct(payload)
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Error validating email " + err.Error()})
+		sentry.SentryHandler(err)
+		return c.Status(http.StatusBadRequest).SendString("error validating: " + err.Error())
+	}
+
+	token := payload.Token
+	userEmail := payload.Email
+
+	if userEmail == "" {
+		// if no email provided then searching it by token
+		verificationData, err := FindVerificationDataByCode(token)
+		if err != nil {
+			sentry.SentryHandler(err)
+			return err
+		}
+		userEmail = verificationData.Email
 	}
 
 	// Generate new code and update verification data
-	verificationData, err := UpdateVerificationData(userEmail, c)
+	updatedVerificationData, err := UpdateVerificationData(userEmail, c)
 	if err != nil {
 		sentry.SentryHandler(err)
 		return err
@@ -447,11 +466,11 @@ func ResendVerificationEmail(c *fiber.Ctx) error {
 
 	// Send email for email verification
 	mailjetClient := email.Init()
-	err = mailjetClient.SendConfirmationEmail(verificationData)
+	err = mailjetClient.SendConfirmationEmail(updatedVerificationData)
 	if err != nil {
 		sentry.SentryHandler(err)
 		return err
 	}
 
-	return c.SendString("email resent successfully")
+	return c.Status(http.StatusOK).JSON(fiber.Map{"message": "email resend successfully", "email": updatedVerificationData.Email})
 }

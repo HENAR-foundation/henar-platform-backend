@@ -365,3 +365,8 @@ type VerificationData struct {
 	ExpiresAt      time.Time          `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
 	UsedAt         *time.Time         `json:"used_at,omitempty" bson:"used_at,omitempty"`
 }
+
+type ResendVerificationEmail struct {
+	Token string `json:"token,omitempty" validate:"omitempty,hexadecimal"`
+	Email string `json:"email,omitempty" validate:"omitempty,email"`
+}
