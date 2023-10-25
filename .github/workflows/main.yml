@@ -48,4 +48,4 @@ jobs:
 
             docker rm $(echo $CONTAINER_NAME) || true
 
-            docker run -d -e APP_ENV='production' -e SENTRY_DSN=${{ secrets.SENTRY_DSN }} -e MAILJET_APIKEY_PRIVATE=${{ secrets.MAILJET_APIKEY_PRIVATE }} -e MAILJET_APIKEY_PUBLIC=${{ secrets.MAILJET_APIKEY_PUBLIC }} -e DB_URI="${{ secrets.DB_URI }}" --name $(echo $CONTAINER_NAME) -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
+            docker run -d -e APP_ENV='production' -e SENTRY_DSN=${{ secrets.SENTRY_DSN }} -e SECRET_KEY=${{secrets.SECRET_KEY}} -e MAILJET_APIKEY_PRIVATE=${{ secrets.MAILJET_APIKEY_PRIVATE }} -e MAILJET_APIKEY_PUBLIC=${{ secrets.MAILJET_APIKEY_PUBLIC }} -e DB_URI="${{ secrets.DB_URI }}" --name $(echo $CONTAINER_NAME) -p 8080:8080 $(echo $REGISTRY)/$(echo $IMAGE_NAME):$(echo $GITHUB_SHA | head -c7)
