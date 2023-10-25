@@ -76,6 +76,15 @@ func initIndexes() {
 			Keys: "title",
 		},
 	}
+	verificationIndexes := Indexes{
+		{
+			Keys:    "email",
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys: "code",
+		},
+	}
 	eventsIndexes := append(indexes, Indexes{
 		{
 			Keys: "location",
@@ -103,6 +112,8 @@ func initIndexes() {
 	createIndex(events, eventsIndexes)
 	users, _ := GetCollection("users")
 	createIndex(users, usersIndexes)
+	verificationDataCollection, _ := GetCollection("verificationdata")
+	createIndex(verificationDataCollection, verificationIndexes)
 }
 
 func InitDb() {

@@ -92,6 +92,7 @@ type UserBody struct {
 type User struct {
 	ID              primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
 	IsActivated     bool               `json:"-" bson:"is_activated"`
+	IsEmailVerified *bool              `json:"-" bson:"is_email_verified"`
 	UserCredentials `bson:"user_credentials"`
 	UserBody        `bson:"user_body"`
 }
@@ -352,4 +353,15 @@ type Translations struct {
 
 type FileResponce struct {
 	URL string `bson:"en" json:"url"`
+}
+
+type VerificationData struct {
+	ID             primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	User           primitive.ObjectID `json:"userId" bson:"user_id"`
+	Email          string             `json:"email" bson:"email"`
+	Code           string             `json:"code,omitempty" bson:"code,omitempty"`
+	ResendAttempts int                `json:"resend_attempts" bson:"resend_attempts"`
+	CreatedAt      time.Time          `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	ExpiresAt      time.Time          `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
+	UsedAt         *time.Time         `json:"used_at,omitempty" bson:"used_at,omitempty"`
 }

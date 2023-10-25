@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"henar-backend/db"
+	"henar-backend/internal/email"
 	"henar-backend/sentry"
 	"henar-backend/types"
 	"henar-backend/utils"
@@ -49,8 +50,10 @@ func SignUp(c *fiber.Ctx) error {
 	}
 	passwordString := string(Password)
 	specialist := types.Specialist
+	IsEmailVerified := false
 	user := types.User{
-		IsActivated: false,
+		IsActivated:     false,
+		IsEmailVerified: &IsEmailVerified,
 		UserCredentials: types.UserCredentials{
 			Email:    uc.Email,
 			Password: &passwordString,
@@ -102,6 +105,21 @@ func SignUp(c *fiber.Ctx) error {
 		return fmt.Errorf("Error retrieving created user: ", err)
 	}
 
+	// Create verification data for the new user and insert it into db
+	verificationData, err := CreateVerificationData(createdUser.ID, createdUser.Email)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return err
+	}
+
+	// Send email for email verification
+	mailjetClient := email.Init()
+	err = mailjetClient.SendConfirmationEmail(verificationData)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return err
+	}
+
 	// Set the response headers and write the response body
 	return c.Status(http.StatusCreated).JSON(fiber.Map{
 		"userId": createdUser.ID,
@@ -137,6 +155,13 @@ func SignIn(c *fiber.Ctx) error {
 		sentry.SentryHandler(err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "wrong credentials",
+		})
+	}
+
+	err = checkVerificationStatus(user)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "email not verified",
 		})
 	}
 
@@ -350,4 +375,83 @@ func ResetPassword(c *fiber.Ctx) error {
 	}
 
 	return c.SendString("Password successfully updated")
+}
+
+// VerifyEmail verifies the provided code
+// @Summary Verify email
+// @Description verifies the provided code then set the User state to verified and deletes verification data
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param secret_code path string true "Secret code"
+// @Success 200 {string} string "Email confirmed successfully"
+// @Failure 400 {string} string "The secret code is invalid or has expired"
+// @Failure 500 {string} string "Error verifying email"
+// @Router /auth/verify-email/{secret_code} [get]
+func VerifyEmail(c *fiber.Ctx) error {
+	token := c.Query("secret_code")
+
+	v := validator.New()
+	err := v.Var(token, "required,uuid")
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Error validating code " + err.Error()})
+	}
+
+	verificationData, err := ValidateVerificationData(token, c)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return err
+	}
+
+	err = UpdateUserVerificationStatus(verificationData.User, true, c)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return err
+	}
+
+	err = UseToken(verificationData.ID, c)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return err
+	}
+
+	return c.SendString("verification succeeded")
+}
+
+// ResendVerificationEmail resends verification email
+// @Summary resend verification email
+// @Description updates verification data and resends email with code
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param email path string true "email"
+// @Success 200 {string} string "email resent successfully"
+// @Failure 400 {string} string "email not found"
+// @Failure 500 {string} string "Error resending email"
+// @Router /auth/verify-email/{email} [get]
+func ResendVerificationEmail(c *fiber.Ctx) error {
+	userEmail := c.Query("email")
+
+	v := validator.New()
+	err := v.Var(userEmail, "required,email")
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Error validating email " + err.Error()})
+	}
+
+	// Generate new code and update verification data
+	verificationData, err := UpdateVerificationData(userEmail, c)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return err
+	}
+
+	// Send email for email verification
+	mailjetClient := email.Init()
+	err = mailjetClient.SendConfirmationEmail(verificationData)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return err
+	}
+
+	return c.SendString("email resent successfully")
 }

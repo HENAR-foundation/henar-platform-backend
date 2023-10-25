@@ -13,6 +13,10 @@ definitions:
     type: object
   types.ContactsRequest:
     properties:
+      approved_contacts:
+        additionalProperties:
+          type: string
+        type: object
       blocked_users:
         additionalProperties:
           type: string
@@ -42,25 +46,18 @@ definitions:
         type: string
       description:
         $ref: '#/definitions/types.Translations'
+      links:
+        type: string
       location:
         type: string
-      moderation_status:
-        $ref: '#/definitions/types.ModerationStatus'
-      reason_of_reject:
+      orgs:
         type: string
       slug:
         type: string
-      tags:
-        items:
-          type: string
-        type: array
-      terms_of_visit:
-        $ref: '#/definitions/types.Translations'
       title:
         $ref: '#/definitions/types.Translations'
     required:
     - date
-    - tags
     type: object
   types.FileResponce:
     properties:
@@ -125,13 +122,15 @@ definitions:
       description:
         $ref: '#/definitions/types.Translations'
       how_to_help_the_project:
-        additionalProperties:
-          type: boolean
-        type: object
+        type: string
+      links:
+        type: string
       moderation_status:
         $ref: '#/definitions/types.ModerationStatus'
       objective:
         $ref: '#/definitions/types.Translations'
+      phase:
+        type: string
       project_status:
         $ref: '#/definitions/types.ProjectStatus'
       reason_of_reject:
@@ -140,6 +139,8 @@ definitions:
         additionalProperties:
           type: boolean
         type: object
+      request:
+        type: string
       slug:
         type: string
       successful_applicants:
@@ -156,8 +157,6 @@ definitions:
         type: integer
       who_is_needed:
         $ref: '#/definitions/types.Translations'
-    required:
-    - tags
     type: object
   types.ProjectStatus:
     enum:
@@ -182,27 +181,15 @@ definitions:
     properties:
       _id:
         type: string
-      created_by:
-        type: string
-      description:
-        $ref: '#/definitions/types.Translations'
       link:
         type: string
-      moderation_status:
-        $ref: '#/definitions/types.ModerationStatus'
-      reason_of_reject:
+      source:
         type: string
-      slug:
-        type: string
-      tags:
-        items:
-          type: string
-        type: array
       title:
-        $ref: '#/definitions/types.Translations'
+        type: string
     required:
     - link
-    - tags
+    - source
     type: object
   types.ResetPassword:
     properties:
@@ -226,18 +213,18 @@ definitions:
     properties:
       _id:
         type: string
-      count:
-        type: integer
-      translations:
-        $ref: '#/definitions/types.Translations'
-      year:
-        type: integer
-      year_delta:
+      category:
+        type: string
+      source:
+        type: string
+      title:
+        type: string
+      value:
         type: integer
     required:
-    - count
-    - year
-    - year_delta
+    - category
+    - source
+    - value
     type: object
   types.Suggestions:
     properties:
@@ -269,6 +256,8 @@ definitions:
         type: string
       avatar:
         type: string
+      banned:
+        type: boolean
       contacts:
         $ref: '#/definitions/types.Contacts'
       contacts_request:
@@ -283,6 +272,8 @@ definitions:
         type: object
       first_name:
         type: string
+      is_email_verified:
+        type: boolean
       job:
         type: string
       language:
@@ -291,15 +282,11 @@ definitions:
         type: string
       location:
         type: string
-      notification:
+      notifications:
         items:
           type: string
         type: array
       password:
-        type: string
-      passwordResetAt:
-        type: string
-      passwordResetToken:
         type: string
       researches:
         additionalProperties:
@@ -320,6 +307,8 @@ definitions:
     properties:
       avatar:
         type: string
+      banned:
+        type: boolean
       contacts:
         $ref: '#/definitions/types.Contacts'
       contacts_request:
@@ -340,7 +329,7 @@ definitions:
         type: string
       location:
         type: string
-      notification:
+      notifications:
         items:
           type: string
         type: array
@@ -447,6 +436,65 @@ paths:
           schema:
             type: string
       summary: Reset password
+      tags:
+      - auth
+  /auth/verify-email/{email}:
+    get:
+      consumes:
+      - application/json
+      description: updates verification data and resends email with code
+      parameters:
+      - description: email
+        in: path
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: email resent successfully
+          schema:
+            type: string
+        "400":
+          description: email not found
+          schema:
+            type: string
+        "500":
+          description: Error resending email
+          schema:
+            type: string
+      summary: resend verification email
+      tags:
+      - auth
+  /auth/verify-email/{secret_code}:
+    get:
+      consumes:
+      - application/json
+      description: verifies the provided code then set the User state to verified
+        and deletes verification data
+      parameters:
+      - description: Secret code
+        in: path
+        name: secret_code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email confirmed successfully
+          schema:
+            type: string
+        "400":
+          description: The secret code is invalid or has expired
+          schema:
+            type: string
+        "500":
+          description: Error verifying email
+          schema:
+            type: string
+      summary: Verify email
       tags:
       - auth
   /projects/cancel/{id}:

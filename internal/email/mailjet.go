@@ -5,6 +5,9 @@ import (
 	"log"
 	"os"
 
+	"henar-backend/sentry"
+	"henar-backend/types"
+
 	mailjet "github.com/mailjet/mailjet-apiv3-go/v4"
 	"github.com/mailjet/mailjet-apiv3-go/v4/resources"
 )
@@ -18,16 +21,24 @@ func Init() *MailjetClient {
 	publicKey := os.Getenv("MAILJET_APIKEY_PUBLIC")
 	secretKey := os.Getenv("MAILJET_APIKEY_PRIVATE")
 
-	mj := mailjet.NewMailjetClient(publicKey, secretKey)
-	var sender []resources.Sender
+	m := mailjet.NewMailjetClient(publicKey, secretKey)
+
+	var data []resources.Sender
+	count, _, err := m.List("sender", &data)
+	if err != nil {
+		log.Printf("Unexpected error during email sender initiation: %s", err)
+	}
+	if count < 1 {
+		log.Printf("At least one sender expected !")
+	}
 
 	return &MailjetClient{
-		client: mj,
-		sender: sender,
+		client: m,
+		sender: data,
 	}
 }
 
-func (c *MailjetClient) SendEmail(toEmail, subject, textPart, htmlPart string) error {
+func (c *MailjetClient) SendEmail(toEmail, name, subject, textPart, htmlPart string) error {
 
 	messagesInfo := []mailjet.InfoMessagesV31{
 		{
@@ -38,7 +49,7 @@ func (c *MailjetClient) SendEmail(toEmail, subject, textPart, htmlPart string) e
 			To: &mailjet.RecipientsV31{
 				mailjet.RecipientV31{
 					Email: toEmail,
-					Name:  "",
+					Name:  name,
 				},
 			},
 			Subject:  subject,
@@ -50,8 +61,17 @@ func (c *MailjetClient) SendEmail(toEmail, subject, textPart, htmlPart string) e
 	messages := mailjet.MessagesV31{Info: messagesInfo}
 	res, err := c.client.SendMailV31(&messages)
 	if err != nil {
-		log.Fatal(err)
+		sentry.SentryHandler(err)
 	}
 	fmt.Printf("Email Data: %+v\n", res)
 	return err
+}
+
+func (c *MailjetClient) SendConfirmationEmail(verificationData types.VerificationData) error {
+	subject := "Confirmation Email"
+	verifyUrl := fmt.Sprintf("https://healthnet.am/verify-email/%s?email=%s", verificationData.Code, verificationData.Email)
+	textPart := fmt.Sprintf("Hello! Thank you for joining Henar! Copy this code %s or Click the following link to confirm your email:  %s", verificationData.Code, verifyUrl)
+	htmlPart := fmt.Sprintf(`<p>Hello! Thank you for joining Henar!</p><p>Copy this code <span><strong>%s</strong></span></p> <p> or Click the following link to confirm your email: <a href="%s">%s</a></p><p>If you didn't requested this email please ignore it.</p> <br><br><p>Henar Foundation</p>`, verificationData.Code, verifyUrl, verifyUrl)
+
+	return c.SendEmail(verificationData.Email, "Recipient", subject, textPart, htmlPart)
 }
