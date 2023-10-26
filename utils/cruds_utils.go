@@ -8,6 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	"crypto/rand"
+	"encoding/hex"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gosimple/slug"
 	"go.mongodb.org/mongo-driver/bson"
@@ -177,4 +180,12 @@ func CreateSlug(Title types.Translations) string {
 
 	slugText := slug.Make(title)
 	return slugText
+}
+
+func RandomHex(n int) (string, error) {
+	bytes := make([]byte, n)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }

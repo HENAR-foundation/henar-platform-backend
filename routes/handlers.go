@@ -8,12 +8,9 @@ import (
 	"henar-backend/types"
 	"time"
 
-	"crypto/sha256"
-	"encoding/hex"
-	"os"
+	"henar-backend/utils"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,27 +18,14 @@ import (
 )
 
 func CreateVerificationData(userId primitive.ObjectID, email string, resendAttempts ...int) (types.VerificationData, error) {
-	secretKey, ok := os.LookupEnv("SECRET_KEY")
-	if !ok {
-		return types.VerificationData{}, errors.New("key not found in environment")
-	}
-
-	randomString := uuid.New().String()
-	userIDString := userId.Hex()
-	tokenData := randomString + userIDString + secretKey
-
-	// Hash the combined data using SHA-256
-	hash := sha256.New()
-	hash.Write([]byte(tokenData))
-	hashedToken := hex.EncodeToString(hash.Sum(nil))
-
+	code, _ := utils.RandomHex(16)
 	expirationTime := time.Now().Add(24 * time.Hour)
 
 	verificationData := types.VerificationData{
 		ID:        primitive.NewObjectID(),
 		User:      userId,
 		Email:     email,
-		Code:      hashedToken,
+		Code:      code,
 		CreatedAt: time.Now(),
 		ExpiresAt: expirationTime,
 	}
@@ -158,11 +142,6 @@ func checkVerificationStatus(user types.User) error {
 func UpdateVerificationData(email string, c *fiber.Ctx) (types.VerificationData, error) {
 	const MaxResendLimit = 5
 
-	secretKey, ok := os.LookupEnv("SECRET_KEY")
-	if !ok {
-		return types.VerificationData{}, errors.New("key not found in environment")
-	}
-
 	verificationDataCollection, _ := db.GetCollection("verificationData")
 
 	filter := bson.M{"email": email}
@@ -184,14 +163,7 @@ func UpdateVerificationData(email string, c *fiber.Ctx) (types.VerificationData,
 	}
 
 	// Generate a new verification code
-	randomString := uuid.New().String()
-	userIDString := verificationData.User.Hex()
-	tokenData := randomString + userIDString + secretKey
-
-	// Hash the combined data using SHA-256
-	hash := sha256.New()
-	hash.Write([]byte(tokenData))
-	newCode := hex.EncodeToString(hash.Sum(nil))
+	newCode, _ := utils.RandomHex(16)
 
 	update := bson.M{
 		"$set": bson.M{
