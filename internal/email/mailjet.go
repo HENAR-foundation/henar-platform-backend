@@ -70,8 +70,8 @@ func (c *MailjetClient) SendEmail(toEmail, name, subject, textPart, htmlPart str
 func (c *MailjetClient) SendConfirmationEmail(verificationData types.VerificationData) error {
 	subject := "Confirmation Email"
 	verifyUrl := fmt.Sprintf("https://healthnet.am/verify-email/%s", verificationData.Code)
-	textPart := fmt.Sprintf("Hello! Thank you for joining Henar! Copy this code %s or Click the following link to confirm your email:  %s", verificationData.Code, verifyUrl)
-	htmlPart := fmt.Sprintf(`<p>Hello! Thank you for joining Henar!</p><p>Copy this code <span><strong>%s</strong></span></p> <p> or Click the following link to confirm your email: <a href="%s">%s</a></p><p>If you didn't requested this email please ignore it.</p> <br><br><p>Henar Foundation</p>`, verificationData.Code, verifyUrl, verifyUrl)
+	textPart := fmt.Sprintf("Hello! Thank you for joining Henar! Click the following link to confirm your email:  %s", verifyUrl)
+	htmlPart := fmt.Sprintf(`<p>Hello! Thank you for joining Henar!</p><p>Click the following link to confirm your email: <a href="%s">%s</a></p><p>If you didn't requested this email please ignore it.</p> <br><br><p>Henar Foundation</p>`, verifyUrl, verifyUrl)
 
 	return c.SendEmail(verificationData.Email, "Recipient", subject, textPart, htmlPart)
 }
