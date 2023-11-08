@@ -36,7 +36,7 @@ func Init() *MailjetClient {
 	return &MailjetClient{
 		client: m,
 		sender: data,
-		host:   "https://healthnet.am/",
+		host:   "https://healthnet.am",
 	}
 }
 
@@ -81,8 +81,8 @@ func (c *MailjetClient) SendConfirmationEmail(verificationData types.Verificatio
 func (c *MailjetClient) SendPasswordResetEmail(verificationData types.VerificationData) error {
 	subject := "Password Reset Request for Henar"
 	resetUrl := fmt.Sprintf("%s/reset-password/%s", c.host, verificationData.Code)
-	textPart := fmt.Sprintf("Hello! We received a request to reset the password for your account. If you made this request, please click the link below to reset your password:  %s", resetUrl)
-	htmlPart := fmt.Sprintf(`<p>Hello!</p><br><p>CWe received a request to reset the password for your account. If you made this request, please click the link below to reset your password:<br> <a href="%s">Click here</a></p><p>If you didn't requested this email please ignore it.</p> <br><br><p>Henar Foundation</p>`, resetUrl)
+	textPart := "Hello! We received a request to reset the password for your account. If you made this request, please click the link below to reset your password:"
+	htmlPart := fmt.Sprintf(`<p>Hello!</p><p>We received a request to reset the password for your account. If you made this request, please click the link below to reset your password:<br> <a href="%s">Click here</a></p><p>If you didn't requested this email please ignore it.</p> <br><br><p>Henar Foundation</p>`, resetUrl)
 
 	return c.SendEmail(verificationData.Email, "Recipient", subject, textPart, htmlPart)
 }
