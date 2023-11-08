@@ -37,7 +37,7 @@ func Init() *MailjetClient {
 	return &MailjetClient{
 		client: m,
 		sender: data,
-		host:   host,
+		host:   "https://healthnet.am/",
 	}
 }
 
