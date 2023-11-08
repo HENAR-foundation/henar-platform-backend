@@ -21,7 +21,6 @@ type MailjetClient struct {
 func Init() *MailjetClient {
 	publicKey := os.Getenv("MAILJET_APIKEY_PUBLIC")
 	secretKey := os.Getenv("MAILJET_APIKEY_PRIVATE")
-	host := os.Getenv("HOST")
 
 	m := mailjet.NewMailjetClient(publicKey, secretKey)
 
