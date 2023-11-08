@@ -35,7 +35,7 @@ func Setup(app *fiber.App) {
 	authGroup.Post("/signin", SignIn)
 	authGroup.Get("/signout", SignOut)
 	authGroup.Get("/check", AuthorMiddleware, Check)
-	authGroup.Post("/forgot-password", ForgotPassword)
+	authGroup.Post("/forgot-password", CreateRateLimiter(), ForgotPassword)
 	authGroup.Get("/verify-email", VerifyEmail)
 	authGroup.Post("/resend-verification-email", ResendVerificationEmail)
 	authGroup.Post("/reset-password", ResetPassword)

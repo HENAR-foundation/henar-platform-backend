@@ -2,8 +2,10 @@ package routes
 
 import (
 	"henar-backend/sentry"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 )
 
 func SessionMiddleware(c *fiber.Ctx) error {
@@ -54,6 +56,13 @@ func AuthorMiddleware(c *fiber.Ctx) error {
 	c.Locals("user_id", userId)
 
 	return c.Next()
+}
+
+func CreateRateLimiter() fiber.Handler {
+	return limiter.New(limiter.Config{
+		Max:        1,
+		Expiration: 3 * time.Minute,
+	})
 }
 
 func BaseMiddleware(c *fiber.Ctx) error {
