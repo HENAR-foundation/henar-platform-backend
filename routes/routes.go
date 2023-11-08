@@ -38,7 +38,7 @@ func Setup(app *fiber.App) {
 	authGroup.Post("/forgot-password", ForgotPassword)
 	authGroup.Get("/verify-email", VerifyEmail)
 	authGroup.Post("/resend-verification-email", ResendVerificationEmail)
-	authGroup.Patch("/reset-password/:token", ResetPassword)
+	authGroup.Post("/reset-password", ResetPassword)
 
 	// Locations routes
 	locationsGroup := app.Group("/v1/locations")

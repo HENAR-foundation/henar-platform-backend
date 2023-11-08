@@ -15,11 +15,13 @@ import (
 type MailjetClient struct {
 	client *mailjet.Client
 	sender []resources.Sender
+	host   string
 }
 
 func Init() *MailjetClient {
 	publicKey := os.Getenv("MAILJET_APIKEY_PUBLIC")
 	secretKey := os.Getenv("MAILJET_APIKEY_PRIVATE")
+	host := os.Getenv("HOST")
 
 	m := mailjet.NewMailjetClient(publicKey, secretKey)
 
@@ -35,6 +37,7 @@ func Init() *MailjetClient {
 	return &MailjetClient{
 		client: m,
 		sender: data,
+		host:   host,
 	}
 }
 
@@ -69,9 +72,18 @@ func (c *MailjetClient) SendEmail(toEmail, name, subject, textPart, htmlPart str
 
 func (c *MailjetClient) SendConfirmationEmail(verificationData types.VerificationData) error {
 	subject := "Confirmation Email"
-	verifyUrl := fmt.Sprintf("https://healthnet.am/verify-email/%s", verificationData.Code)
+	verifyUrl := fmt.Sprintf("%s/verify-email/%s", c.host, verificationData.Code)
 	textPart := fmt.Sprintf("Hello! Thank you for joining Henar! Click the following link to confirm your email:  %s", verifyUrl)
-	htmlPart := fmt.Sprintf(`<p>Hello! Thank you for joining Henar!</p><p>Click the following link to confirm your email: <a href="%s">%s</a></p><p>If you didn't requested this email please ignore it.</p> <br><br><p>Henar Foundation</p>`, verifyUrl, verifyUrl)
+	htmlPart := fmt.Sprintf(`<p>Hello! Thank you for joining Henar!</p><p>Click the following link to confirm your email: <a href="%s">Click here</a></p><p>If you didn't requested this email please ignore it.</p> <br><br><p>Henar Foundation</p>`, verifyUrl)
+
+	return c.SendEmail(verificationData.Email, "Recipient", subject, textPart, htmlPart)
+}
+
+func (c *MailjetClient) SendPasswordResetEmail(verificationData types.VerificationData) error {
+	subject := "Password Reset Request for Henar"
+	resetUrl := fmt.Sprintf("%s/reset-password/%s", c.host, verificationData.Code)
+	textPart := fmt.Sprintf("Hello! We received a request to reset the password for your account. If you made this request, please click the link below to reset your password:  %s", resetUrl)
+	htmlPart := fmt.Sprintf(`<p>Hello!</p><br><p>CWe received a request to reset the password for your account. If you made this request, please click the link below to reset your password:<br> <a href="%s">Click here</a></p><p>If you didn't requested this email please ignore it.</p> <br><br><p>Henar Foundation</p>`, resetUrl)
 
 	return c.SendEmail(verificationData.Email, "Recipient", subject, textPart, htmlPart)
 }

@@ -17,9 +17,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func CreateVerificationData(userId primitive.ObjectID, email string, resendAttempts ...int) (types.VerificationData, error) {
+func CreateVerificationData(userId primitive.ObjectID, email string, verificationDataType types.VerificationDataType, resendAttempts ...int) (types.VerificationData, error) {
 	code, _ := utils.RandomHex(16)
-	expirationTime := time.Now().Add(24 * time.Hour)
+
+	var expirationTime time.Time
+
+	if verificationDataType == types.PassReset {
+		expirationTime = time.Now().Add(15 * time.Minute)
+	} else if verificationDataType == types.MailConfirmation {
+		expirationTime = time.Now().Add(24 * time.Hour)
+	}
 
 	verificationData := types.VerificationData{
 		ID:        primitive.NewObjectID(),
@@ -28,6 +35,7 @@ func CreateVerificationData(userId primitive.ObjectID, email string, resendAttem
 		Code:      code,
 		CreatedAt: time.Now(),
 		ExpiresAt: expirationTime,
+		Type:      verificationDataType,
 	}
 
 	if len(resendAttempts) > 0 {
@@ -70,6 +78,11 @@ func ValidateVerificationData(token string, c *fiber.Ctx) (types.VerificationDat
 		}
 		sentry.SentryHandler(err)
 		return types.VerificationData{}, errors.New("error verificating data")
+	}
+
+	// Check if the verification data is of the correct type.
+	if verificationData.Type != types.MailConfirmation {
+		return types.VerificationData{}, errors.New("incorrect token type")
 	}
 
 	if verificationData.UsedAt != nil {
@@ -189,6 +202,24 @@ func UpdateVerificationData(email string, c *fiber.Ctx) (types.VerificationData,
 	return verificationData, nil
 }
 
+func MarkVerificationDataAsUsed(verificationData types.VerificationData, c *fiber.Ctx) error {
+	collection, _ := db.GetCollection("verificationData")
+	filter := bson.M{"_id": verificationData.ID}
+	update := bson.M{
+		"$set": bson.M{
+			"used_at": time.Now(),
+		},
+	}
+
+	_, err := collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return c.SendString("Error updating verification data: " + err.Error())
+	}
+
+	return nil
+}
+
 func FindVerificationDataByCode(code string) (types.VerificationData, error) {
 	verificationDataCollection, _ := db.GetCollection("verificationData")
 
@@ -206,4 +237,51 @@ func FindVerificationDataByCode(code string) (types.VerificationData, error) {
 	}
 
 	return verificationData, nil
+}
+
+func GetUserByEmail(email string, c *fiber.Ctx) (types.User, error) {
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{"user_credentials.email": email}
+
+	var user types.User
+	err := collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return types.User{}, c.SendString("Password reset email sent")
+		}
+		return types.User{}, c.SendString("Error retrieving user: " + err.Error())
+	}
+
+	return user, nil
+}
+
+func GetUserByID(id primitive.ObjectID, c *fiber.Ctx) (types.User, error) {
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{"_id": id}
+
+	var user types.User
+	err := collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		sentry.SentryHandler(err)
+		if err == mongo.ErrNoDocuments {
+			return types.User{}, c.SendString("Error retrieving user")
+		}
+		return types.User{}, c.SendString("Error retrieving user: " + err.Error())
+	}
+
+	return user, nil
+}
+
+func SaveUser(user types.User, c *fiber.Ctx) (types.User, error) {
+	collection, _ := db.GetCollection("users")
+	filter := bson.M{"_id": user.ID}
+
+	update := bson.M{"$set": user}
+	_, err := collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return types.User{}, c.SendString("Error updating user: " + err.Error())
+	}
+	return user, nil
 }

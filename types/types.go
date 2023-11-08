@@ -31,6 +31,7 @@ type ForgotPassword struct {
 type ResetPassword struct {
 	Password        *string `json:"password" validate:"required"`
 	PasswordConfirm *string `json:"password_confirm" validate:"required"`
+	Token           string  `json:"token,omitempty" validate:"required,hexadecimal"`
 }
 
 type PasswordUpdate struct {
@@ -355,15 +356,23 @@ type FileResponce struct {
 	URL string `bson:"en" json:"url"`
 }
 
+type VerificationDataType string
+
+const (
+	PassReset        VerificationDataType = "pass_reset"
+	MailConfirmation VerificationDataType = "mail_confirmation"
+)
+
 type VerificationData struct {
-	ID             primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	User           primitive.ObjectID `json:"userId" bson:"user_id"`
-	Email          string             `json:"email" bson:"email"`
-	Code           string             `json:"code,omitempty" bson:"code,omitempty"`
-	ResendAttempts int                `json:"resend_attempts" bson:"resend_attempts"`
-	CreatedAt      time.Time          `json:"created_at,omitempty" bson:"created_at,omitempty"`
-	ExpiresAt      time.Time          `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
-	UsedAt         *time.Time         `json:"used_at,omitempty" bson:"used_at,omitempty"`
+	ID             primitive.ObjectID   `json:"id,omitempty" bson:"_id,omitempty"`
+	User           primitive.ObjectID   `json:"userId" bson:"user_id"`
+	Email          string               `json:"email" bson:"email"`
+	Code           string               `json:"code,omitempty" bson:"code,omitempty"`
+	ResendAttempts int                  `json:"resend_attempts" bson:"resend_attempts"`
+	CreatedAt      time.Time            `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	ExpiresAt      time.Time            `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
+	UsedAt         *time.Time           `json:"used_at,omitempty" bson:"used_at,omitempty"`
+	Type           VerificationDataType `json:"type,omitempty" bson:"type,omitempty"`
 }
 
 type ResendVerificationEmail struct {

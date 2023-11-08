@@ -106,7 +106,7 @@ func SignUp(c *fiber.Ctx) error {
 	}
 
 	// Create verification data for the new user and insert it into db
-	verificationData, err := CreateVerificationData(createdUser.ID, createdUser.Email)
+	verificationData, err := CreateVerificationData(createdUser.ID, createdUser.Email, "mail_confirmation")
 	if err != nil {
 		sentry.SentryHandler(err)
 		return err
@@ -237,16 +237,15 @@ func Check(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(user)
 }
 
-// ForgotPassword rejects a project request for the user.
-// @Summary Forgot password
-// @Description Sends a password reset email to the user with the specified email address.
+// @Summary Initiate password reset
+// @Description Send a password reset email to the user
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param request body types.ForgotPassword true "Forgot password request body"
-// @Success 200 {string} string "You will receive a reset email if a user with that email exists"
-// @Failure 400 {string} string "Error parsing request body or passwords do not match"
-// @Failure 500 {string} string "Error retrieving user or updating user"
+// @Param email body string true "User email"
+// @Success 200 {object} map[string]string "Password reset email sent"
+// @Failure 400 {object} map[string]string "Bad Request"
+// @Failure 500 {object} map[string]string "Internal Server Error"
 // @Router /auth/forgot-password [post]
 func ForgotPassword(c *fiber.Ctx) error {
 	var requestBody types.ForgotPassword
@@ -256,54 +255,28 @@ func ForgotPassword(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Error parsing request body: " + err.Error())
 	}
 
-	collection, _ := db.GetCollection("users")
-	filter := bson.M{"user_credentials.email": requestBody.Email}
-	var user types.User
-	err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	user, err := GetUserByEmail(requestBody.Email, c)
 	if err != nil {
 		sentry.SentryHandler(err)
-		if err == mongo.ErrNoDocuments {
-			return c.SendString("You will receive a reset email if user with that email exist")
-		}
-		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+		return err
 	}
 
-	// Hash the password
-	passwordResetToken, err := bcrypt.GenerateFromPassword(
-		[]byte(*&user.Email),
-		bcrypt.DefaultCost,
-	)
+	verificationData, err := CreateVerificationData(user.ID, user.Email, "pass_reset")
 	if err != nil {
 		sentry.SentryHandler(err)
-		return c.Status(http.StatusInternalServerError).SendString("Error hashing password: " + err.Error())
+		return err
 	}
 
-	// Comparing the hash
-	err = bcrypt.CompareHashAndPassword([]byte(user.Email), []byte(passwordResetToken))
+	mailjetClient := email.Init()
+	err = mailjetClient.SendPasswordResetEmail(verificationData)
 	if err != nil {
 		sentry.SentryHandler(err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "ERROR TOKEN",
-		})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// passwordResetToken := "resetToken"
-
-	// user.PasswordResetToken = passwordResetToken
-	// user.PasswordResetAt = time.Now().Add(time.Minute * 15)
-
-	// filter = bson.M{"_id": user.ID}
-	// update := bson.M{"$set": user}
-	// _, err = collection.UpdateOne(context.TODO(), filter, update)
-	// if err != nil {
-	// 	sentry.SentryHandler(err)
-	// 	return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
-	// }
-
-	return c.SendString("You will receive a reset email if user with that email exist")
+	return c.JSON(fiber.Map{"message": "Password reset email sent"})
 }
 
-// ResetPassword rejects a project request for the user.
 // @Summary Reset password
 // @Description Resets the password for the user using the provided reset token.
 // @Tags auth
@@ -314,7 +287,7 @@ func ForgotPassword(c *fiber.Ctx) error {
 // @Success 200 {string} string "Password successfully updated"
 // @Failure 400 {string} string "The reset token is invalid or has expired, or error parsing request body or passwords do not match"
 // @Failure 500 {string} string "Error retrieving user or updating user"
-// @Router /auth/reset-password/{token} [post]
+// @Router /auth/reset-password/ [post]
 func ResetPassword(c *fiber.Ctx) error {
 	var payload types.ResetPassword
 	err := c.BodyParser(&payload)
@@ -334,44 +307,57 @@ func ResetPassword(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).SendString("Passwords do not match")
 	}
 
-	resetToken := c.Params("token")
+	token := payload.Token
 
-	collection, _ := db.GetCollection("users")
-	filter := bson.M{
-		"password_reset_token": resetToken,
-		"password_reset_at":    bson.M{"$gt": time.Now()},
-	}
-	var user types.User
-	err = collection.FindOne(context.TODO(), filter).Decode(&user)
+	verificationData, err := FindVerificationDataByCode(token)
 	if err != nil {
 		sentry.SentryHandler(err)
-		if err == mongo.ErrNoDocuments {
-			return c.Status(http.StatusBadRequest).SendString("The reset token is invalid or has expired")
-		}
-		return c.Status(http.StatusInternalServerError).SendString("Error retrieving user: " + err.Error())
+		return err
 	}
 
+	// Check if the verification data is expired.
+	if verificationData.ExpiresAt.Before(time.Now()) {
+		return c.Status(http.StatusBadRequest).SendString("Token has expired")
+	}
+
+	// Check if the verification data is of the correct type.
+	if verificationData.Type != types.PassReset {
+		return c.Status(http.StatusBadRequest).SendString("Incorrect token type")
+	}
+
+	// Hash the new password.
 	Password, err := bcrypt.GenerateFromPassword(
 		[]byte(*payload.Password),
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
 		sentry.SentryHandler(err)
-		return fmt.Errorf("Error hashing password: %w", err)
+		return fmt.Errorf("error hashing password: %w", err)
 	}
 
 	passwordString := string(Password)
 
-	user.Password = &passwordString
-	// TODO: change token flow
-	// user.PasswordResetToken = ""
-
-	filter = bson.M{"_id": user.ID}
-	update := bson.M{"$set": user}
-	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	// Retrieve the User instance for the user ID.
+	user, err := GetUserByID(verificationData.User, c)
 	if err != nil {
 		sentry.SentryHandler(err)
-		return c.Status(http.StatusInternalServerError).SendString("Error updating user: " + err.Error())
+		return err
+	}
+
+	// Update the user's password.
+	user.Password = &passwordString
+
+	// Save the User instance.
+	_, err = SaveUser(user, c)
+	if err != nil {
+		sentry.SentryHandler(err)
+		return err
+	}
+
+	// Mark the verification data as used and save
+	if err := MarkVerificationDataAsUsed(verificationData, c); err != nil {
+		sentry.SentryHandler(err)
+		return err
 	}
 
 	return c.SendString("Password successfully updated")
