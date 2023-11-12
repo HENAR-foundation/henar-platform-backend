@@ -312,12 +312,24 @@ type Research struct {
 	Source string             `json:"source" validate:"required"`
 }
 
+type StatisticTranslation struct {
+	Title  string `json:"title"`
+	Value  string `json:"value"`
+	Source string `json:"source"`
+}
+
+type StatisticTranslationEN struct {
+	Title  string `json:"title" validate:"required"`
+	Value  string `json:"value" validate:"required"`
+	Source string `json:"source" validate:"required"`
+}
+
 type Statistic struct {
-	ID       primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
-	Title    string             `json:"title"`
-	Value    string             `json:"value" validate:"required"`
-	Source   string             `json:"source" validate:"required"`
-	Category primitive.ObjectID `json:"category" validate:"required"`
+	ID       primitive.ObjectID     `json:"_id" bson:"_id,omitempty"`
+	EN       StatisticTranslationEN `json:"en"`
+	HY       StatisticTranslation   `json:"hy"`
+	RU       StatisticTranslation   `json:"ru"`
+	Category primitive.ObjectID     `json:"category" validate:"required"`
 }
 
 // TODO: create location on user and event create
