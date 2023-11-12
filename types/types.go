@@ -315,7 +315,7 @@ type Research struct {
 type Statistic struct {
 	ID       primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
 	Title    string             `json:"title"`
-	Value    int64              `json:"value" validate:"required"`
+	Value    string             `json:"value" validate:"required"`
 	Source   string             `json:"source" validate:"required"`
 	Category primitive.ObjectID `json:"category" validate:"required"`
 }

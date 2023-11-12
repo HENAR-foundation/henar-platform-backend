@@ -42,7 +42,7 @@ func GetStatistics(c *fiber.Ctx) error {
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
 		sentry.SentryHandler(err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Error finding statistics")
+		return c.Status(fiber.StatusInternalServerError).SendString("error finding statistics")
 	}
 
 	// Get the results from the cursor
