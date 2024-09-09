@@ -21,6 +21,7 @@ import (
 )
 
 func init() {
+	//
 	if os.Getenv("APP_ENV") != "production" {
 		err := godotenv.Load(".env")
 
